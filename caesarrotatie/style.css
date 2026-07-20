@@ -46,6 +46,33 @@ button.secondary{
 button.secondary:hover{ background: var(--panel); }
 button.secondary:active{ transform: scale(0.97); }
 
+/* custom text modal */
+.custom-card{ max-width: 480px; text-align: left; }
+.custom-card .icon{ text-align: center; }
+.custom-card h2{ text-align: center; }
+.custom-card p{ text-align: center; }
+
+.custom-card textarea{
+  width: 100%;
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  resize: vertical;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--panel);
+  margin-bottom: 16px;
+}
+
+.modal-actions{
+  display:flex;
+  justify-content: center;
+  gap: 10px;
+}
+.modal-actions button{ padding: 11px 20px; }
+
 .text-panel{
   background: #ffffff;
   border: 1px solid var(--panel-border);
@@ -94,6 +121,9 @@ button.secondary:active{ transform: scale(0.97); }
 .tag-p2{ background: var(--accent); color: #ffffff; }
 
 .copy-btn{
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
   letter-spacing: 0.5px;
@@ -102,7 +132,7 @@ button.secondary:active{ transform: scale(0.97); }
   background: var(--panel);
   border: 1px solid var(--panel-border);
   border-radius: 999px;
-  padding: 8px 10px 2px 10px;
+  padding: 8px 12px;
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -114,18 +144,6 @@ button.secondary:active{ transform: scale(0.97); }
   border-color: rgba(255, 255, 255, 0.3);
 }
 .result-panel .copy-btn:hover{ background: rgba(255, 255, 255, 0.26); }
-
-.panel-input{
-  width: 100%;
-  border: none;
-  outline: none;
-  resize: vertical;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: clamp(14px, 3.4vw, 16px);
-  line-height: 1.7;
-  color: var(--text);
-  background: transparent;
-}
 
 .panel-text{
   font-family: 'JetBrains Mono', monospace;

@@ -6,6 +6,7 @@
 <title>Caesarrotatie</title>
 <link rel="stylesheet" href="../shared/base.css">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 </head>
 <body>
 
@@ -13,7 +14,7 @@
   <div class="masthead">
     <div class="eyebrow"><a href="../" style="color:inherit; text-decoration:none;">← sjc-apps</a> · versleutel & ontcijfer met een rotatie</div>
     <h1>Caesar<span class="sup">rotatie</span></h1>
-    <p class="intro">Typ je eigen boodschap om ze te versleutelen, of laad een voorbeeldtekst en draai aan de rotatie tot je ze kan kraken.</p>
+    <p class="intro">Klik op "Nieuwe tekst" om je eigen boodschap te versleutelen, of laad een voorbeeldtekst en draai aan de rotatie tot je ze kan kraken.</p>
   </div>
 
   <div class="controls">
@@ -21,14 +22,12 @@
       <label for="preset-select">Voorbeeldtekst</label>
       <select id="preset-select"></select>
     </div>
-    <button class="secondary" id="clear-btn">Wis</button>
+    <button class="secondary" id="new-text-btn">Nieuwe tekst</button>
   </div>
 
   <div class="text-panel input-panel">
-    <div class="panel-label">
-      <label for="input-text">Oorspronkelijk</label>
-    </div>
-    <textarea id="input-text" class="panel-input" rows="3" spellcheck="false"></textarea>
+    <div class="panel-label">Oorspronkelijk</div>
+    <div class="panel-text" id="input-text"></div>
   </div>
 
   <div class="rotation-panel">
@@ -58,9 +57,22 @@
   <div class="text-panel result-panel">
     <div class="panel-label">
       Resultaat
-      <button class="copy-btn" id="copy-btn" title="Kopieer resultaat">⧉ Kopieer</button>
+      <button class="copy-btn" id="copy-btn" title="Kopieer resultaat"><i class="fa-solid fa-copy fa-fw" id="copy-icon"></i><span id="copy-label">Kopieer</span></button>
     </div>
     <div class="panel-text" id="result-text"></div>
+  </div>
+</div>
+
+<div class="overlay" id="custom-overlay">
+  <div class="card start custom-card">
+    <div class="icon">✎</div>
+    <h2>Eigen boodschap</h2>
+    <p>Typ of plak je eigen boodschap. Ze wordt meteen versleuteld met de huidige rotatie.</p>
+    <textarea id="custom-text" rows="5" spellcheck="false" placeholder="Typ hier je eigen boodschap…"></textarea>
+    <div class="modal-actions">
+      <button class="secondary" id="custom-cancel-btn">Annuleren</button>
+      <button class="primary" id="use-text-btn">Gebruiken</button>
+    </div>
   </div>
 </div>
 
@@ -78,7 +90,7 @@
   ];
 
   const presetSelect = document.getElementById('preset-select');
-  const clearBtn = document.getElementById('clear-btn');
+  const newTextBtn = document.getElementById('new-text-btn');
   const inputText = document.getElementById('input-text');
   const resultText = document.getElementById('result-text');
   const rotValue = document.getElementById('rot-value');
@@ -87,9 +99,15 @@
   const ringTop = document.getElementById('ring-top');
   const ringBottomStrip = document.getElementById('ring-bottom-strip');
   const copyBtn = document.getElementById('copy-btn');
+  const copyIcon = document.getElementById('copy-icon');
+  const copyLabel = document.getElementById('copy-label');
+  const customOverlay = document.getElementById('custom-overlay');
+  const customText = document.getElementById('custom-text');
+  const useTextBtn = document.getElementById('use-text-btn');
+  const customCancelBtn = document.getElementById('custom-cancel-btn');
 
   let rotation = 0;
-  let currentPresetIndex = -1;
+  let sourceText = '';
 
   function caesarShift(text, shift){
     const s = ((shift % 26) + 26) % 26;
@@ -119,20 +137,22 @@
 
   function populateSelect(){
     presetSelect.innerHTML = '';
-    const placeholder = document.createElement('option');
-    placeholder.value = -1;
-    placeholder.textContent = '— eigen tekst —';
-    presetSelect.appendChild(placeholder);
     PRESETS.forEach((_, i) => {
       const opt = document.createElement('option');
       opt.value = i;
       opt.textContent = `Voorbeeld ${i + 1}`;
       presetSelect.appendChild(opt);
     });
+    const customOpt = document.createElement('option');
+    customOpt.value = 'custom';
+    customOpt.textContent = 'Eigen tekst';
+    customOpt.disabled = true;
+    customOpt.hidden = true;
+    presetSelect.appendChild(customOpt);
   }
 
   function updateResult(){
-    resultText.textContent = caesarShift(inputText.value, rotation);
+    resultText.textContent = caesarShift(sourceText, rotation);
   }
 
   function setRotation(n){
@@ -145,29 +165,44 @@
   }
 
   function loadPreset(index){
-    currentPresetIndex = index;
-    inputText.value = caesarShift(PRESETS[index].text, PRESETS[index].key);
+    sourceText = caesarShift(PRESETS[index].text, PRESETS[index].key);
+    inputText.textContent = sourceText;
     presetSelect.value = index;
     setRotation(0);
   }
 
+  function openCustomModal(){
+    customText.value = '';
+    customOverlay.classList.add('show');
+    customText.focus();
+  }
+
+  function closeCustomModal(){
+    customOverlay.classList.remove('show');
+  }
+
   presetSelect.addEventListener('change', () => {
-    const v = parseInt(presetSelect.value, 10);
-    if (v >= 0) loadPreset(v);
+    loadPreset(parseInt(presetSelect.value, 10));
   });
 
-  clearBtn.addEventListener('click', () => {
-    inputText.value = '';
-    currentPresetIndex = -1;
-    presetSelect.value = -1;
+  newTextBtn.addEventListener('click', openCustomModal);
+
+  useTextBtn.addEventListener('click', () => {
+    presetSelect.value = 'custom';
+    sourceText = customText.value;
+    inputText.textContent = sourceText;
     setRotation(0);
-    inputText.focus();
+    customOverlay.classList.remove('show');
   });
 
-  inputText.addEventListener('input', () => {
-    presetSelect.value = -1;
-    currentPresetIndex = -1;
-    updateResult();
+  customCancelBtn.addEventListener('click', closeCustomModal);
+
+  customOverlay.addEventListener('click', (e) => {
+    if (e.target === customOverlay) closeCustomModal();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && customOverlay.classList.contains('show')) closeCustomModal();
   });
 
   rotMinus.addEventListener('click', () => setRotation(rotation - 1));
@@ -180,9 +215,12 @@
 
   copyBtn.addEventListener('click', () => {
     navigator.clipboard.writeText(resultText.textContent).then(() => {
-      const original = copyBtn.textContent;
-      copyBtn.textContent = '✓ Gekopieerd';
-      setTimeout(() => { copyBtn.textContent = original; }, 1200);
+      copyIcon.className = 'fa-solid fa-check fa-fw';
+      copyLabel.textContent = 'Gekopieerd';
+      setTimeout(() => {
+        copyIcon.className = 'fa-solid fa-copy fa-fw';
+        copyLabel.textContent = 'Kopieer';
+      }, 1200);
     }).catch(() => {});
   });
 
