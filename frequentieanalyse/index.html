@@ -6,6 +6,7 @@
 <title>Frequentieanalyse</title>
 <link rel="stylesheet" href="../shared/base.css">
 <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
 </head>
 <body>
 
@@ -59,10 +60,10 @@
 
 <div class="overlay" id="custom-overlay">
   <div class="card start custom-card">
-    <div class="icon">✎</div>
-    <h2>Eigen versleutelde tekst</h2>
-    <p>Plak een versleutelde tekst (bv. eentje die je zelf gemaakt hebt) en analyseer ze.</p>
-    <textarea id="custom-text" rows="5" spellcheck="false" placeholder="Plak hier je versleutelde tekst…"></textarea>
+    <div class="icon"><i class="fa-solid fa-pencil fa-fw" id="copy-icon"></i></div>
+    <h2>Eigen boodschap</h2>
+    <p>Plak een versleutelde tekst en analyseer ze.</p>
+    <textarea id="custom-text" rows="5" spellcheck="false" placeholder="Typ hier je eigen boodschap…"></textarea>
     <div class="modal-actions">
       <button class="secondary" id="custom-cancel-btn">Annuleren</button>
       <button class="primary" id="analyze-btn">Analyseer tekst</button>
