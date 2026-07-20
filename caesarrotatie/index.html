@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Caesarrotatie</title>
+<link rel="stylesheet" href="../shared/base.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <div class="masthead">
+    <div class="eyebrow"><a href="../" style="color:inherit; text-decoration:none;">← sjc-apps</a> · versleutel & ontcijfer met een rotatie</div>
+    <h1>Caesar<span class="sup">rotatie</span></h1>
+    <p class="intro">Typ je eigen boodschap om ze te versleutelen, of laad een voorbeeldtekst en draai aan de rotatie tot je ze kan kraken.</p>
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <label for="preset-select">Voorbeeldtekst</label>
+      <select id="preset-select"></select>
+    </div>
+    <button class="secondary" id="clear-btn">Wis</button>
+  </div>
+
+  <div class="text-panel input-panel">
+    <div class="panel-label">
+      <label for="input-text">Oorspronkelijk</label>
+    </div>
+    <textarea id="input-text" class="panel-input" rows="3" spellcheck="false"></textarea>
+  </div>
+
+  <div class="rotation-panel">
+    <div class="rotation-control">
+      <button class="step-btn" id="rot-minus" aria-label="Verminder rotatie">−</button>
+      <div class="rotation-readout">
+        <span class="label">Rotatie</span>
+        <span class="rotation-value" id="rot-value">0</span>
+      </div>
+      <button class="step-btn" id="rot-plus" aria-label="Verhoog rotatie">+</button>
+    </div>
+
+    <div class="ring-wrap" id="ring-wrap">
+      <div class="ring-inner">
+        <div class="ring-rows">
+          <div class="ring-top" id="ring-top"></div>
+          <div class="ring-bottom-viewport">
+            <div class="ring-bottom-strip" id="ring-bottom-strip"></div>
+          </div>
+        </div>
+        <div class="anchor-frame"></div>
+      </div>
+    </div>
+    <p class="ring-caption">Boven het <span class="tag tag-p1">oorspronkelijke</span> alfabet, onder het <span class="tag tag-p2">versleutelde</span> alfabet dat mee opschuift.</p>
+  </div>
+
+  <div class="text-panel result-panel">
+    <div class="panel-label">
+      Resultaat
+      <button class="copy-btn" id="copy-btn" title="Kopieer resultaat">⧉ Kopieer</button>
+    </div>
+    <div class="panel-text" id="result-text"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const PRESETS = [
+    { text: "Wiskunde is overal om ons heen, je moet het alleen leren zien.", key: 3 },
+    { text: "Julius Caesar gebruikte deze versleuteling om berichten naar zijn generaals te sturen.", key: 7 },
+    { text: "Het Sint-Jozefscollege in Aalst bestaat al meer dan honderd jaar.", key: 11 },
+    { text: "Een goede sleutel onthoud je, een goed wachtwoord verzin je.", key: 5 },
+    { text: "Elke letter van het alfabet schuift een vast aantal plaatsen op.", key: 9 },
+    { text: "Met vijfentwintig mogelijke sleutels kraak je deze code met wat geduld.", key: 15 },
+    { text: "Informatica en wiskunde gaan vaak hand in hand.", key: 2 },
+    { text: "Als je dit kan lezen, heb je de juiste rotatie gevonden. Knap gedaan!", key: 20 }
+  ];
+
+  const presetSelect = document.getElementById('preset-select');
+  const clearBtn = document.getElementById('clear-btn');
+  const inputText = document.getElementById('input-text');
+  const resultText = document.getElementById('result-text');
+  const rotValue = document.getElementById('rot-value');
+  const rotMinus = document.getElementById('rot-minus');
+  const rotPlus = document.getElementById('rot-plus');
+  const ringTop = document.getElementById('ring-top');
+  const ringBottomStrip = document.getElementById('ring-bottom-strip');
+  const copyBtn = document.getElementById('copy-btn');
+
+  let rotation = 0;
+  let currentPresetIndex = -1;
+
+  function caesarShift(text, shift){
+    const s = ((shift % 26) + 26) % 26;
+    return text.replace(/[a-zA-Z]/g, (ch) => {
+      const base = ch === ch.toUpperCase() ? 65 : 97;
+      return String.fromCharCode((ch.charCodeAt(0) - base + s) % 26 + base);
+    });
+  }
+
+  function buildRing(){
+    ringTop.innerHTML = '';
+    for (let i = 0; i < 26; i++){
+      const cell = document.createElement('div');
+      cell.className = 'ring-cell';
+      cell.textContent = String.fromCharCode(65 + i);
+      ringTop.appendChild(cell);
+    }
+
+    ringBottomStrip.innerHTML = '';
+    for (let i = 0; i < 78; i++){
+      const cell = document.createElement('div');
+      cell.className = 'ring-cell';
+      cell.textContent = String.fromCharCode(65 + (i % 26));
+      ringBottomStrip.appendChild(cell);
+    }
+  }
+
+  function populateSelect(){
+    presetSelect.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = -1;
+    placeholder.textContent = '— eigen tekst —';
+    presetSelect.appendChild(placeholder);
+    PRESETS.forEach((_, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = `Voorbeeld ${i + 1}`;
+      presetSelect.appendChild(opt);
+    });
+  }
+
+  function updateResult(){
+    resultText.textContent = caesarShift(inputText.value, rotation);
+  }
+
+  function setRotation(n){
+    rotation = Math.max(0, Math.min(25, n));
+    rotValue.textContent = rotation;
+    document.documentElement.style.setProperty('--shift', rotation);
+    rotMinus.disabled = rotation === 0;
+    rotPlus.disabled = rotation === 25;
+    updateResult();
+  }
+
+  function loadPreset(index){
+    currentPresetIndex = index;
+    inputText.value = caesarShift(PRESETS[index].text, PRESETS[index].key);
+    presetSelect.value = index;
+    setRotation(0);
+  }
+
+  presetSelect.addEventListener('change', () => {
+    const v = parseInt(presetSelect.value, 10);
+    if (v >= 0) loadPreset(v);
+  });
+
+  clearBtn.addEventListener('click', () => {
+    inputText.value = '';
+    currentPresetIndex = -1;
+    presetSelect.value = -1;
+    setRotation(0);
+    inputText.focus();
+  });
+
+  inputText.addEventListener('input', () => {
+    presetSelect.value = -1;
+    currentPresetIndex = -1;
+    updateResult();
+  });
+
+  rotMinus.addEventListener('click', () => setRotation(rotation - 1));
+  rotPlus.addEventListener('click', () => setRotation(rotation + 1));
+
+  document.getElementById('ring-wrap').addEventListener('wheel', (e) => {
+    e.preventDefault();
+    setRotation(rotation + (e.deltaY > 0 ? 1 : -1));
+  }, { passive: false });
+
+  copyBtn.addEventListener('click', () => {
+    navigator.clipboard.writeText(resultText.textContent).then(() => {
+      const original = copyBtn.textContent;
+      copyBtn.textContent = '✓ Gekopieerd';
+      setTimeout(() => { copyBtn.textContent = original; }, 1200);
+    }).catch(() => {});
+  });
+
+  populateSelect();
+  buildRing();
+  loadPreset(0);
+})();
+</script>
+
+</body>
+</html>
