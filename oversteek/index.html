@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Getallenoversteek</title>
+<link rel="stylesheet" href="../shared/base.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <div class="masthead">
+    <div class="eyebrow"><a href="../" style="color:inherit; text-decoration:none;">← sjc-apps</a> · een spelletje negatieve getallen</div>
+    <h1>Getallen<span class="sup">oversteek</span></h1>
+  </div>
+
+  <div class="hud">
+    <div class="hud-item">
+      <span class="label">Stap</span>
+      <span class="value" id="step-value">0 / 10</span>
+    </div>
+    <div class="hud-item">
+      <span class="label">Tijd</span>
+      <span class="value" id="time-value">0.0s</span>
+    </div>
+    <div class="hud-item">
+      <span class="label">Beste tijd</span>
+      <span class="value" id="best-value">—</span>
+    </div>
+  </div>
+
+  <div class="progress-dots" id="progress-dots"></div>
+
+  <div class="question-bar">
+    <div class="label">Los op en klik het juiste steentje aan</div>
+    <div class="eq" id="eq-text">Klik op start om te beginnen</div>
+  </div>
+
+  <div class="river-scroll">
+    <div class="river-grid" id="river-grid" aria-label="Rivier met steentjes"></div>
+  </div>
+</div>
+
+<div class="overlay show" id="start-overlay">
+  <div class="card start">
+    <div class="icon">≈</div>
+    <h2>Getallenoversteek</h2>
+    <p>Steek de rivier over door 10 keer het juiste antwoord te kiezen. Bij elke stap zie je een som met negatieve getallen en drie mogelijke antwoorden, verdeeld over drie steentjes. Klik het juiste steentje aan om verder te gaan. Eén foute klik en je valt in het water — dan begin je opnieuw.</p>
+    <button class="primary" id="start-btn">Start oversteek</button>
+  </div>
+</div>
+
+<div class="notice" id="win-overlay">
+  <div class="card win">
+    <div class="icon">✓</div>
+    <h2>Overgestoken!</h2>
+    <p id="win-reason">Je hebt alle 10 stappen goed.</p>
+    <div class="stat-row">
+      <div class="stat"><span class="n" id="win-time">0.0s</span><span class="l">jouw tijd</span></div>
+      <div class="stat"><span class="n" id="win-best">0.0s</span><span class="l">beste tijd</span></div>
+    </div>
+    <button class="primary" id="again-btn">Opnieuw oversteken</button>
+  </div>
+</div>
+
+<div class="notice" id="over-overlay">
+  <div class="card over">
+    <div class="icon">✕</div>
+    <h2>In het water!</h2>
+    <p id="over-reason">Dat was niet het juiste antwoord.</p>
+    <div class="stat-row">
+      <div class="stat"><span class="n" id="over-step">0</span><span class="l">stappen gehaald</span></div>
+      <div class="stat"><span class="n" id="over-answer">0</span><span class="l">juiste antwoord was</span></div>
+    </div>
+    <button class="primary" id="retry-btn">Probeer opnieuw</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const STEPS = 10;
+  const ADD_MAGNITUDE = 20; // grootte voor optellen/aftrekken (1..20)
+  const MUL_MAGNITUDE = 9;  // grootte voor vermenigvuldigen/delen (1..9), zoals in het origineel
+  document.documentElement.style.setProperty('--steps', STEPS);
+
+  const stepValue = document.getElementById('step-value');
+  const timeValue = document.getElementById('time-value');
+  const bestValue = document.getElementById('best-value');
+  const progressDots = document.getElementById('progress-dots');
+  const eqText = document.getElementById('eq-text');
+  const riverGrid = document.getElementById('river-grid');
+
+  const startOverlay = document.getElementById('start-overlay');
+  const winOverlay = document.getElementById('win-overlay');
+  const overOverlay = document.getElementById('over-overlay');
+
+  const startBtn = document.getElementById('start-btn');
+  const againBtn = document.getElementById('again-btn');
+  const retryBtn = document.getElementById('retry-btn');
+
+  const winReason = document.getElementById('win-reason');
+  const winTime = document.getElementById('win-time');
+  const winBest = document.getElementById('win-best');
+
+  const overReason = document.getElementById('over-reason');
+  const overStep = document.getElementById('over-step');
+  const overAnswer = document.getElementById('over-answer');
+
+  let playing = false;
+  let currentStep = 0;
+  let bestTime = null;
+  let startTime = 0;
+  let rafHandle = null;
+  let currentAnswer = null;
+  let currentEqText = '';
+  let columns = []; // columns[col] = { stones: [el0, el1, el2], values: [n0,n1,n2] }
+
+  function randInt(max){ return 1 + Math.floor(Math.random() * max); }
+
+  // makes sure the two wrong answers differ from the correct one and from
+  // each other; nudges by increasing steps until all three are distinct
+  function nudgeUntilDistinct(value, avoid){
+    let v = value;
+    let tries = 0;
+    while (avoid.includes(v) && tries < 25){
+      tries++;
+      v += (Math.random() < 0.5 ? -1 : 1) * (tries + 2);
+    }
+    return v;
+  }
+  function finalizeFakes(answer, fake1, fake2){
+    let f1 = fake1;
+    if (f1 === answer) f1 = nudgeUntilDistinct(f1, [answer]);
+    let f2 = fake2;
+    if (f2 === answer || f2 === f1) f2 = nudgeUntilDistinct(f2, [answer, f1]);
+    return [f1, f2];
+  }
+
+  function buildQuestion(){
+    const addR = () => randInt(ADD_MAGNITUDE);
+    const mulR = () => randInt(MUL_MAGNITUDE);
+    const type = Math.floor(Math.random() * 13);
+    let a, b, text, answer, fake1, fake2;
+
+    switch (type){
+      // addition of mixed signs -- classic mistake is treating the sum as a
+      // subtraction, in either order
+      case 0: a = -addR(); b = addR(); text = `(${a}) + ${b}`; answer = a + b; fake1 = a - b; fake2 = b - a; break;
+      case 1: a = addR(); b = -addR(); text = `${a} + (${b})`; answer = a + b; fake1 = a - b; fake2 = b - a; break;
+      case 2: a = -addR(); b = -addR(); text = `(${a}) + (${b})`; answer = a + b; fake1 = a - b; fake2 = b - a; break;
+
+      // subtraction of mixed signs -- classic mistake is adding instead, or
+      // subtracting in the wrong order
+      case 3: a = -addR(); b = addR(); text = `(${a}) − ${b}`; answer = a - b; fake1 = a + b; fake2 = b - a; break;
+      case 4: a = addR(); b = -addR(); text = `${a} − (${b})`; answer = a - b; fake1 = a + b; fake2 = b - a; break;
+      case 5: {
+        a = -addR(); b = -addR();
+        if (a === b) b -= 1;
+        text = `(${a}) − (${b})`; answer = a - b; fake1 = a + b; fake2 = b - a; break;
+      }
+
+      // multiplication -- classic mistakes are a sign slip (forgetting the
+      // result should be negative/positive) or being one multiple off
+      case 6: a = -mulR(); b = mulR(); text = `(${a}) × ${b}`; answer = a * b; fake1 = -answer; fake2 = answer + b; break;
+      case 7: a = mulR(); b = -mulR(); text = `${a} × (${b})`; answer = a * b; fake1 = -answer; fake2 = answer - b; break;
+      case 8: a = -mulR(); b = -mulR(); text = `(${a}) × (${b})`; answer = a * b; fake1 = -answer; fake2 = answer + b; break;
+
+      // division -- classic mistakes are the same sign slip, or reading off
+      // one of the two numbers shown in the question instead of dividing
+      case 9: {
+        const denom = mulR(); const k = mulR();
+        const num = -(denom * k);
+        text = `(${num}) ÷ ${denom}`; answer = num / denom;
+        fake1 = -answer; fake2 = denom; break;
+      }
+      case 10: {
+        const denom = -mulR(); const k = mulR();
+        const num = (-denom) * k;
+        text = `${num} ÷ (${denom})`; answer = num / denom;
+        fake1 = -answer; fake2 = denom; break;
+      }
+      case 11: {
+        const denom = -mulR(); const k = mulR();
+        const num = denom * k;
+        text = `(${num}) ÷ (${denom})`; answer = num / denom;
+        fake1 = -answer; fake2 = denom; break;
+      }
+
+      // plain subtraction that dips negative -- classic mistake is adding,
+      // or flipping the sign of the correct answer
+      default: {
+        a = addR(); b = a + addR();
+        text = `${a} − ${b}`; answer = a - b; fake1 = a + b; fake2 = -answer; break;
+      }
+    }
+
+    [fake1, fake2] = finalizeFakes(answer, fake1, fake2);
+    return { text, answer, fake1, fake2 };
+  }
+
+  function buildRiver(){
+    riverGrid.innerHTML = '';
+    columns = [];
+    for (let row = 0; row < 3; row++){
+      for (let col = 0; col < STEPS; col++){
+        const stone = document.createElement('div');
+        stone.className = 'stone upcoming';
+        const num = document.createElement('span');
+        num.className = 'num';
+        stone.appendChild(num);
+        stone.addEventListener('click', () => onStoneClick(col, row));
+        riverGrid.appendChild(stone);
+        if (!columns[col]) columns[col] = { stones: [null, null, null], values: [null, null, null] };
+        columns[col].stones[row] = stone;
+      }
+    }
+  }
+
+  function buildProgressDots(){
+    progressDots.innerHTML = '';
+    for (let i = 0; i < STEPS; i++){
+      const d = document.createElement('div');
+      d.className = 'pd';
+      progressDots.appendChild(d);
+    }
+  }
+
+  function updateProgressDots(){
+    const dots = [...progressDots.children];
+    dots.forEach((d, i) => {
+      d.className = 'pd' + (i < currentStep ? ' done' : (i === currentStep && playing ? ' current' : ''));
+    });
+  }
+
+  function setStepColumn(col, stateClass, questionData){
+    const colData = columns[col];
+    if (!colData) return;
+    const rows = [0, 1, 2];
+
+    if (stateClass === 'active' && questionData){
+      const correctRow = Math.floor(Math.random() * 3);
+      const distractors = [questionData.fake1, questionData.fake2];
+      let dIdx = 0;
+      rows.forEach(row => {
+        const stone = colData.stones[row];
+        const value = row === correctRow ? questionData.answer : distractors[dIdx++];
+        colData.values[row] = value;
+        stone.querySelector('.num').textContent = value;
+        stone.className = 'stone active';
+      });
+    } else if (stateClass === 'done'){
+      rows.forEach(row => {
+        colData.stones[row].className = 'stone done';
+      });
+    }
+  }
+
+  function showQuestionForStep(col){
+    const q = buildQuestion();
+    currentEqText = q.text;
+    currentAnswer = q.answer;
+    eqText.innerHTML = `${q.text} = <span class="eq-answer">?</span>`;
+    setStepColumn(col, 'active', q);
+    stepValue.textContent = `${col} / ${STEPS}`;
+    updateProgressDots();
+  }
+
+  function onStoneClick(col, row){
+    if (!playing || col !== currentStep) return;
+    const value = columns[col].values[row];
+    const stone = columns[col].stones[row];
+
+    if (value === currentAnswer){
+      setStepColumn(col, 'done');
+      currentStep++;
+      if (currentStep >= STEPS){
+        finishSuccess();
+      } else {
+        showQuestionForStep(currentStep);
+      }
+    } else {
+      stone.classList.add('wrong');
+      const correctRow = columns[col].values.findIndex(v => v === currentAnswer);
+      if (correctRow !== -1) columns[col].stones[correctRow].classList.add('reveal');
+      finishFail();
+    }
+  }
+
+  function startTimer(){
+    startTime = performance.now();
+    const step = (now) => {
+      if (!playing) return;
+      const elapsed = (now - startTime) / 1000;
+      timeValue.textContent = elapsed.toFixed(1) + 's';
+      rafHandle = requestAnimationFrame(step);
+    };
+    rafHandle = requestAnimationFrame(step);
+  }
+
+  function stopTimer(){
+    if (rafHandle) cancelAnimationFrame(rafHandle);
+  }
+
+  function finishSuccess(){
+    playing = false;
+    stopTimer();
+    stepValue.textContent = `${STEPS} / ${STEPS}`;
+    updateProgressDots();
+    const finalTime = (performance.now() - startTime) / 1000;
+    if (bestTime === null || finalTime < bestTime){
+      bestTime = finalTime;
+      bestValue.textContent = bestTime.toFixed(1) + 's';
+    }
+    winReason.textContent = `Je hebt alle ${STEPS} stappen goed beantwoord.`;
+    winTime.textContent = finalTime.toFixed(1) + 's';
+    winBest.textContent = bestTime.toFixed(1) + 's';
+    winOverlay.classList.add('show');
+  }
+
+  function finishFail(){
+    playing = false;
+    stopTimer();
+    updateProgressDots();
+    overReason.textContent = `Het juiste antwoord op "${currentEqText}" was ${currentAnswer}.`;
+    overStep.textContent = currentStep;
+    overAnswer.textContent = currentAnswer;
+    overOverlay.classList.add('show');
+  }
+
+  function newGame(){
+    startOverlay.classList.remove('show');
+    winOverlay.classList.remove('show');
+    overOverlay.classList.remove('show');
+
+    currentStep = 0;
+    stepValue.textContent = `0 / ${STEPS}`;
+    buildRiver();
+    buildProgressDots();
+    playing = true;
+    showQuestionForStep(0);
+    startTimer();
+  }
+
+  startBtn.addEventListener('click', newGame);
+  againBtn.addEventListener('click', newGame);
+  retryBtn.addEventListener('click', newGame);
+})();
+</script>
+
+</body>
+</html>

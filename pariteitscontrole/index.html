@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pariteitscontrole</title>
+<link rel="stylesheet" href="../shared/base.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <div class="masthead">
+    <div class="eyebrow"><a href="../" style="color:inherit; text-decoration:none;">← sjc-apps</a> · oefen pariteitsbits</div>
+    <h1>Pariteits<span class="sup">controle</span></h1>
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <label for="rows">Rijen</label>
+      <input type="number" id="rows" min="2" max="50" value="5">
+    </div>
+    <div class="control-group">
+      <label for="cols">Kolommen</label>
+      <input type="number" id="cols" min="2" max="50" value="8">
+    </div>
+    <button class="primary" id="new-btn">Nieuw</button>
+  </div>
+
+  <div class="grid-container">
+    <div id="grid" class="grid"></div>
+  </div>
+
+  <div class="footer-row">
+    <p class="hint">De laatste rij en kolom tonen de pariteitsbits. Klik op een cel om ze om te draaien.</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  let rows = 5;
+  let cols = 8;
+  let grid = [];
+
+  function createEmptyGrid(){
+    grid = [];
+    for (let i = 0; i < rows; i++){
+      grid[i] = [];
+      for (let j = 0; j < cols; j++){
+        grid[i][j] = false;
+      }
+    }
+  }
+
+  function calculateParity(){
+    // pariteit per rij (laatste kolom)
+    for (let i = 0; i < rows - 1; i++){
+      let count = 0;
+      for (let j = 0; j < cols - 1; j++){
+        if (grid[i][j]) count++;
+      }
+      grid[i][cols - 1] = (count % 2 === 1);
+    }
+
+    // pariteit per kolom (laatste rij)
+    for (let j = 0; j < cols - 1; j++){
+      let count = 0;
+      for (let i = 0; i < rows - 1; i++){
+        if (grid[i][j]) count++;
+      }
+      grid[rows - 1][j] = (count % 2 === 1);
+    }
+
+    // pariteit voor de hoek (rechtsonder)
+    let count = 0;
+    for (let i = 0; i < rows - 1; i++){
+      if (grid[i][cols - 1]) count++;
+    }
+    grid[rows - 1][cols - 1] = (count % 2 === 1);
+  }
+
+  function generateGrid(){
+    rows = parseInt(document.getElementById('rows').value);
+    cols = parseInt(document.getElementById('cols').value);
+
+    createEmptyGrid();
+
+    // vul willekeurig alleen de data-cellen (niet de laatste rij en kolom)
+    for (let i = 0; i < rows - 1; i++){
+      for (let j = 0; j < cols - 1; j++){
+        grid[i][j] = Math.random() > 0.5;
+      }
+    }
+
+    calculateParity();
+    renderGrid();
+  }
+
+  function toggleCell(i, j){
+    grid[i][j] = !grid[i][j];
+    renderGrid();
+  }
+
+  function renderGrid(){
+    const gridElement = document.getElementById('grid');
+    gridElement.innerHTML = '';
+
+    let cellSize = 50;
+    let gap = 8;
+    let sizeClass = '';
+
+    const maxDimension = Math.max(rows, cols);
+
+    if (maxDimension > 20){
+      cellSize = 20;
+      gap = 4;
+      sizeClass = 'tiny';
+    } else if (maxDimension > 12){
+      cellSize = 30;
+      gap = 6;
+      sizeClass = 'small';
+    }
+
+    gridElement.style.gridTemplateColumns = `repeat(${cols}, ${cellSize}px)`;
+    gridElement.style.gridTemplateRows = `repeat(${rows}, ${cellSize}px)`;
+    gridElement.style.gap = `${gap}px`;
+
+    for (let i = 0; i < rows; i++){
+      for (let j = 0; j < cols; j++){
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+
+        if (sizeClass) cell.classList.add(sizeClass);
+        cell.classList.add(grid[i][j] ? 'on' : 'off');
+
+        cell.addEventListener('click', () => toggleCell(i, j));
+        gridElement.appendChild(cell);
+      }
+    }
+  }
+
+  document.getElementById('new-btn').addEventListener('click', generateGrid);
+  document.getElementById('rows').addEventListener('keypress', (event) => {
+    if (event.key === 'Enter') generateGrid();
+  });
+  document.getElementById('cols').addEventListener('keypress', (event) => {
+    if (event.key === 'Enter') generateGrid();
+  });
+
+  generateGrid();
+})();
+</script>
+
+</body>
+</html>
