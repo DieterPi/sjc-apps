@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Frequentieanalyse</title>
+<link rel="stylesheet" href="../shared/base.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <div class="masthead">
+    <div class="eyebrow"><a href="../" style="color:inherit; text-decoration:none;">← sjc-apps</a> · kraak een substitutiecijfer met letterfrequenties</div>
+    <h1>Frequentie<span class="sup">analyse</span></h1>
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <label for="preset-select">Voorbeeldtekst</label>
+      <select id="preset-select"></select>
+    </div>
+    <button class="secondary" id="reset-guesses-btn">Reset koppelingen</button>
+    <button class="secondary" id="new-text-btn">Nieuwe tekst</button>
+  </div>
+
+  <div class="text-panel puzzle-panel">
+    <div class="panel-label">
+      Versleutelde tekst
+      <span class="progress-tag" id="progress-tag">0 / 0 letters gekoppeld</span>
+    </div>
+    <div class="panel-text puzzle-text" id="puzzle-text"></div>
+  </div>
+
+  <div class="text-panel keytable-panel">
+    <div class="panel-label">Koppel de letters</div>
+    <div class="keytable-scroll">
+      <div class="keytable" id="keytable"></div>
+    </div>
+    <p class="hint keytable-hint">Klik op een letter in de versleutelde tekst om meteen naar haar vakje te springen. Twee letters aan dezelfde letter koppelen? Dan lichten beide vakjes rood op.</p>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-head">
+      <h2>Letterfrequentie</h2>
+      <div class="chart-legend">
+        <span class="legend-item"><span class="swatch pending"></span>Nog te koppelen</span>
+        <span class="legend-item"><span class="swatch solved"></span>Gekoppeld</span>
+        <span class="legend-item"><span class="swatch reference"></span>Nederlands gemiddeld</span>
+      </div>
+    </div>
+    <p class="chart-hint">Van vaakst naar minst vaak voorkomend. De hoogste balk van jouw tekst is waarschijnlijk de letter <strong>e</strong>, de tweede vaak <strong>n</strong>, enzovoort.</p>
+    <div class="chart-scroll">
+      <div class="freq-chart" id="freq-chart"></div>
+    </div>
+  </div>
+
+</div>
+
+<div class="overlay" id="custom-overlay">
+  <div class="card start custom-card">
+    <div class="icon">✎</div>
+    <h2>Eigen versleutelde tekst</h2>
+    <p>Plak een versleutelde tekst (bv. eentje die je zelf gemaakt hebt) en analyseer ze.</p>
+    <textarea id="custom-text" rows="5" spellcheck="false" placeholder="Plak hier je versleutelde tekst…"></textarea>
+    <div class="modal-actions">
+      <button class="secondary" id="custom-cancel-btn">Annuleren</button>
+      <button class="primary" id="analyze-btn">Analyseer tekst</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const DUTCH_FREQ_ORDER = [
+    ['E', 18.91], ['N', 10.03], ['A', 7.49], ['T', 6.79], ['I', 6.50], ['R', 6.41],
+    ['O', 6.06], ['D', 5.93], ['S', 3.73], ['L', 3.57], ['G', 3.40], ['V', 2.85],
+    ['H', 2.38], ['K', 2.25], ['M', 2.21], ['U', 1.99], ['B', 1.58], ['P', 1.57],
+    ['W', 1.52], ['J', 1.46], ['Z', 1.39], ['C', 1.24], ['F', 0.81], ['X', 0.040],
+    ['Y', 0.035], ['Q', 0.009]
+  ];
+
+  const PRESETS = [
+    {
+      text: "De cryptografie bestaat al eeuwenlang en werd gebruikt door legers, kooplieden en geheime genootschappen. Vandaag de dag beschermt versleuteling onze berichten, wachtwoorden en bankgegevens op het internet.",
+      key: "TUGAXDHIRKLNEYSVMQOWBFJZPC"
+    },
+    {
+      text: "Elke taal heeft een eigen letterverdeling. In het Nederlands komt de letter e het vaakst voor, gevolgd door de n en de a. Deze regelmaat maakt frequentieanalyse een krachtig wapen tegen eenvoudige versleuteling.",
+      key: "IODRGLHUFNWMAYTJKSBVCZQEXP"
+    },
+    {
+      text: "Een substitutiecijfer vervangt elke letter van het alfabet door een andere letter. Zolang je genoeg tekst hebt, verraadt de frequentie van elke letter uiteindelijk welke originele letter erachter schuilt.",
+      key: "VIBGAOPYKXJCWHZNSQUFRMDLTE"
+    },
+    {
+      text: "Het Sint-Jozefscollege in Aalst moedigt leerlingen aan om kritisch na te denken over technologie, veiligheid en de geschiedenis van geheime communicatie tussen mensen.",
+      key: "HFTMLCXPBGESNDUIWZQKAJYVRO"
+    },
+    {
+      text: "Speurders en codebrekers gebruiken al eeuwenlang wiskunde en logica om berichten te ontcijferen. Met geduld, een schema van letterfrequenties en een beetje puzzelplezier kom je al een heel eind.",
+      key: "YVZJOXTASMLKNQWHBIDRCUPGEF"
+    }
+  ];
+
+  const presetSelect = document.getElementById('preset-select');
+  const resetGuessesBtn = document.getElementById('reset-guesses-btn');
+  const newTextBtn = document.getElementById('new-text-btn');
+  const customOverlay = document.getElementById('custom-overlay');
+  const customText = document.getElementById('custom-text');
+  const analyzeBtn = document.getElementById('analyze-btn');
+  const customCancelBtn = document.getElementById('custom-cancel-btn');
+  const puzzleText = document.getElementById('puzzle-text');
+  const progressTag = document.getElementById('progress-tag');
+  const freqChart = document.getElementById('freq-chart');
+  const keytable = document.getElementById('keytable');
+
+  let cipherText = '';
+  let guesses = {};
+  let lettersByCipher = {};
+  let guessInputs = {};
+  let guessInputOrder = [];
+  let obsBarsByLetter = {};
+  let obsLabelsByLetter = {};
+  let refBarsByLetter = {};
+  let cipherLabelsByLetter = {};
+
+  function substitute(text, mapFn){
+    return text.replace(/[a-zA-Z]/g, (ch) => {
+      const isUpper = ch === ch.toUpperCase();
+      const mapped = mapFn(ch.toUpperCase());
+      return isUpper ? mapped : mapped.toLowerCase();
+    });
+  }
+
+  function encryptWithKey(text, key){
+    return substitute(text, (ch) => key[ch.charCodeAt(0) - 65]);
+  }
+
+  function computeObservedFrequencies(text){
+    const counts = {};
+    for (let i = 0; i < 26; i++) counts[String.fromCharCode(65 + i)] = 0;
+    let total = 0;
+    for (const ch of text.toUpperCase()){
+      if (ch >= 'A' && ch <= 'Z'){ counts[ch]++; total++; }
+    }
+    const entries = Object.keys(counts).map((letter) => ({
+      letter,
+      count: counts[letter],
+      pct: total ? (counts[letter] / total * 100) : 0
+    }));
+    entries.sort((a, b) => b.pct - a.pct || a.letter.localeCompare(b.letter));
+    return entries;
+  }
+
+  function buildKeytable(){
+    keytable.innerHTML = '';
+    guessInputs = {};
+    guessInputOrder = [];
+    for (let i = 0; i < 26; i++){
+      const letter = String.fromCharCode(65 + i);
+
+      const col = document.createElement('div');
+      col.className = 'key-col';
+
+      const cipherCell = document.createElement('div');
+      cipherCell.className = 'key-cipher-cell';
+      const cipherLetterEl = document.createElement('span');
+      cipherLetterEl.className = 'cipher-letter';
+      cipherLetterEl.textContent = letter;
+      cipherCell.appendChild(cipherLetterEl);
+      cipherLabelsByLetter[letter] = cipherLetterEl;
+
+      const guessCell = document.createElement('div');
+      guessCell.className = 'key-guess-cell';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.maxLength = 1;
+      input.dataset.cipher = letter;
+      input.setAttribute('aria-label', 'Vermoeden voor ' + letter);
+      guessCell.appendChild(input);
+
+      col.appendChild(cipherCell);
+      col.appendChild(guessCell);
+      keytable.appendChild(col);
+
+      guessInputs[letter] = input;
+      guessInputOrder.push(input);
+
+      input.addEventListener('input', () => {
+        const clean = input.value.replace(/[^a-zA-Z]/g, '').slice(-1).toUpperCase();
+        input.value = clean;
+        if (clean){
+          guesses[letter] = clean;
+        } else {
+          delete guesses[letter];
+        }
+        input.classList.toggle('filled', !!clean);
+        renderPuzzleContent();
+        updateConflicts();
+        updateProgress();
+        updateMappedState();
+      });
+
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter'){
+          e.preventDefault();
+          const idx = guessInputOrder.indexOf(input);
+          const next = guessInputOrder[idx + 1];
+          if (next) { next.focus(); next.select(); }
+        }
+      });
+
+      input.addEventListener('focus', () => input.select());
+    }
+  }
+
+  function highlightCipherLetter(letter, on){
+    const spans = lettersByCipher[letter];
+    if (!spans) return;
+    spans.forEach((s) => s.classList.toggle('hover', on));
+  }
+
+  // Rebuild puzzle text spans' content based on current guesses (case preserved).
+  function renderPuzzleContent(){
+    Object.keys(lettersByCipher).forEach((letter) => {
+      const guess = guesses[letter];
+      lettersByCipher[letter].forEach((span) => {
+        const isUpper = span.dataset.upper === '1';
+        if (guess){
+          span.textContent = isUpper ? guess : guess.toLowerCase();
+          span.classList.add('mapped');
+          span.classList.remove('unmapped');
+        } else {
+          span.textContent = isUpper ? span.dataset.cipher : span.dataset.cipher.toLowerCase();
+          span.classList.add('unmapped');
+          span.classList.remove('mapped');
+        }
+      });
+    });
+  }
+
+  function buildPuzzle(text){
+    puzzleText.innerHTML = '';
+    lettersByCipher = {};
+    for (let i = 0; i < 26; i++) lettersByCipher[String.fromCharCode(65 + i)] = [];
+
+    const tokens = text.match(/[a-zA-Z]+|[^a-zA-Z]+/g) || [];
+
+    tokens.forEach((token) => {
+      if (!/[a-zA-Z]/.test(token)){
+        puzzleText.appendChild(document.createTextNode(token));
+        return;
+      }
+
+      const word = document.createElement('span');
+      word.className = 'word-nowrap';
+
+      for (const ch of token){
+        const upper = ch.toUpperCase();
+        const span = document.createElement('span');
+        span.className = 'letter-tile unmapped';
+        span.dataset.cipher = upper;
+        span.dataset.upper = (ch === ch.toUpperCase()) ? '1' : '0';
+        span.textContent = ch;
+
+        span.addEventListener('mouseenter', () => highlightCipherLetter(upper, true));
+        span.addEventListener('mouseleave', () => highlightCipherLetter(upper, false));
+        span.addEventListener('click', () => {
+          const input = guessInputs[upper];
+          if (input){
+            input.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+            input.focus();
+            input.select();
+          }
+        });
+
+        word.appendChild(span);
+        lettersByCipher[upper].push(span);
+      }
+
+      puzzleText.appendChild(word);
+    });
+  }
+
+  function updateConflicts(){
+    const valueCounts = {};
+    Object.values(guesses).forEach((v) => { valueCounts[v] = (valueCounts[v] || 0) + 1; });
+    Object.keys(guessInputs).forEach((letter) => {
+      const guess = guesses[letter];
+      const isConflict = !!guess && valueCounts[guess] > 1;
+      guessInputs[letter].classList.toggle('conflict', isConflict);
+    });
+  }
+
+  function updateProgress(){
+    const distinct = new Set();
+    for (const ch of cipherText.toUpperCase()){
+      if (ch >= 'A' && ch <= 'Z') distinct.add(ch);
+    }
+    const mapped = [...distinct].filter((l) => guesses[l]).length;
+    progressTag.textContent = `${mapped} / ${distinct.size} letters gekoppeld`;
+  }
+
+  function updateMappedState(){
+    const usedPlainLetters = new Set(Object.values(guesses));
+
+    Object.keys(obsBarsByLetter).forEach((letter) => {
+      const isMapped = !!guesses[letter];
+      obsBarsByLetter[letter].classList.toggle('solved', isMapped);
+      obsBarsByLetter[letter].classList.toggle('pending', !isMapped);
+      obsLabelsByLetter[letter].classList.toggle('solved', isMapped);
+      obsLabelsByLetter[letter].classList.toggle('pending', !isMapped);
+    });
+
+    Object.keys(cipherLabelsByLetter).forEach((letter) => {
+      const isMapped = !!guesses[letter];
+      cipherLabelsByLetter[letter].classList.toggle('solved', isMapped);
+      cipherLabelsByLetter[letter].classList.toggle('pending', !isMapped);
+    });
+
+    Object.keys(refBarsByLetter).forEach((letter) => {
+      refBarsByLetter[letter].classList.toggle('used', usedPlainLetters.has(letter));
+    });
+  }
+
+  function buildFreqChart(){
+    const observed = computeObservedFrequencies(cipherText);
+
+    const maxVal = Math.max(observed[0].pct, DUTCH_FREQ_ORDER[0][1], 1);
+    const CHART_H = 150;
+
+    freqChart.innerHTML = '';
+    obsBarsByLetter = {};
+    obsLabelsByLetter = {};
+    refBarsByLetter = {};
+
+    for (let i = 0; i < 26; i++){
+      const obs = observed[i];
+      const ref = DUTCH_FREQ_ORDER[i];
+
+      const group = document.createElement('div');
+      group.className = 'freq-group';
+
+      const bars = document.createElement('div');
+      bars.className = 'freq-bars';
+      bars.style.height = CHART_H + 'px';
+
+      const obsBar = document.createElement('div');
+      obsBar.className = 'freq-bar observed';
+      obsBar.style.height = Math.max(2, (obs.pct / maxVal) * CHART_H) + 'px';
+      obsBarsByLetter[obs.letter] = obsBar;
+
+      const refBar = document.createElement('div');
+      refBar.className = 'freq-bar reference';
+      refBar.style.height = Math.max(2, (ref[1] / maxVal) * CHART_H) + 'px';
+      refBarsByLetter[ref[0]] = refBar;
+
+      bars.appendChild(obsBar);
+      bars.appendChild(refBar);
+
+      const labels = document.createElement('div');
+      labels.className = 'freq-labels';
+      const obsLabel = document.createElement('span');
+      obsLabel.className = 'freq-label';
+      obsLabel.textContent = obs.letter;
+      obsLabelsByLetter[obs.letter] = obsLabel;
+      const refLabel = document.createElement('span');
+      refLabel.className = 'freq-label';
+      refLabel.textContent = ref[0];
+      labels.appendChild(obsLabel);
+      labels.appendChild(refLabel);
+
+      group.appendChild(bars);
+      group.appendChild(labels);
+      freqChart.appendChild(group);
+    }
+
+    updateMappedState();
+  }
+
+  function loadCipherText(text){
+    cipherText = text;
+    guesses = {};
+    buildPuzzle(text);
+    renderPuzzleContent();
+    buildFreqChart();
+    Object.values(guessInputs).forEach((input) => {
+      input.value = '';
+      input.classList.remove('filled', 'conflict');
+    });
+    updateProgress();
+  }
+
+  function populateSelect(){
+    presetSelect.innerHTML = '';
+    PRESETS.forEach((_, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      opt.textContent = `Voorbeeld ${i + 1}`;
+      presetSelect.appendChild(opt);
+    });
+    const customOpt = document.createElement('option');
+    customOpt.value = 'custom';
+    customOpt.textContent = 'Eigen tekst';
+    customOpt.disabled = true;
+    customOpt.hidden = true;
+    presetSelect.appendChild(customOpt);
+  }
+
+  function loadPreset(index){
+    const encrypted = encryptWithKey(PRESETS[index].text, PRESETS[index].key);
+    presetSelect.value = index;
+    loadCipherText(encrypted);
+  }
+
+  function openCustomModal(){
+    customText.value = '';
+    customOverlay.classList.add('show');
+    customText.focus();
+  }
+
+  function closeCustomModal(){
+    customOverlay.classList.remove('show');
+  }
+
+  presetSelect.addEventListener('change', () => {
+    loadPreset(parseInt(presetSelect.value, 10));
+  });
+
+  newTextBtn.addEventListener('click', openCustomModal);
+
+  analyzeBtn.addEventListener('click', () => {
+    presetSelect.value = 'custom';
+    loadCipherText(customText.value);
+    customOverlay.classList.remove('show');
+  });
+
+  customCancelBtn.addEventListener('click', closeCustomModal);
+
+  customOverlay.addEventListener('click', (e) => {
+    if (e.target === customOverlay) closeCustomModal();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && customOverlay.classList.contains('show')) closeCustomModal();
+  });
+
+  resetGuessesBtn.addEventListener('click', () => {
+    guesses = {};
+    Object.values(guessInputs).forEach((input) => {
+      input.value = '';
+      input.classList.remove('filled', 'conflict');
+    });
+    renderPuzzleContent();
+    updateProgress();
+    updateMappedState();
+  });
+
+  populateSelect();
+  buildKeytable();
+  loadPreset(0);
+})();
+</script>
+
+</body>
+</html>
