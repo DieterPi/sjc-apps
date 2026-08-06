@@ -26,11 +26,13 @@
 }
 
 .app-card .icon{
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 26px;
-  font-weight: 700;
   color: var(--accent);
   margin-bottom: 10px;
+}
+.app-card .icon svg{
+  width: 24px;
+  height: 24px;
+  display: block;
 }
 .app-card h2{
   font-family: 'Space Grotesk', sans-serif;
