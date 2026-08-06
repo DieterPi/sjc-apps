@@ -7,3 +7,4 @@ Kleine mini-webapps, gebundeld in één repository met een gedeelde stijl.
 - Instelbaar rooster om pariteitsbits te oefenen
 - Caesarrotatie, versleutel je eigen boodschap of kraak een voorbeeldtekst door aan de rotatie te draaien
 - Frequentieanalyse, kraak een substitutiecijfer door de letterfrequentie te vergelijken en letters te koppelen
+- Kleurmenger, wissel een geheime sleutel uit volgens Diffie-Hellman door kleuren te mengen, of speel de spion die meeluistert

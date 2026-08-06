@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kleurmenger</title>
+<link rel="stylesheet" href="../shared/base.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="wrap">
+  <div class="masthead">
+    <div class="eyebrow"><a href="../" style="color:inherit; text-decoration:none;">← sjc-apps</a> · bouw samen een geheime kleur op zonder ze ooit te versturen</div>
+    <h1>Kleur<span class="sup">menger</span></h1>
+  </div>
+
+  <div class="controls">
+    <div class="control-group">
+      <span class="control-label">Rol</span>
+      <div class="pill-group" id="role-pills">
+        <button class="pill" data-value="verzender"><span class="pill-emoji">🧑🏻‍💻</span>Verzender</button>
+        <button class="pill" data-value="ontvanger"><span class="pill-emoji">🧑🏻‍💻</span>Ontvanger</button>
+        <button class="pill" data-value="spion"><span class="pill-emoji">🕵️</span>Spion</button>
+      </div>
+    </div>
+    <div class="control-sep" aria-hidden="true"></div>
+    <div class="control-group">
+      <span class="control-label">Moeilijkheid</span>
+      <div class="pill-group" id="difficulty-pills">
+        <button class="pill" data-value="gemiddeld">Gemiddeld</button>
+        <button class="pill" data-value="moeilijk">Moeilijk</button>
+      </div>
+    </div>
+    <button class="secondary" id="reset-btn">Opnieuw beginnen</button>
+  </div>
+
+  <div class="role-prompt" id="role-prompt">
+    <p>Kies hierboven eerst je rol om te beginnen.</p>
+  </div>
+
+  <div id="deelnemer-screen" class="screen hidden">
+    <section class="reveal-section" id="section-keys">
+      <h3>Publieke en private sleutel</h3>
+      <p class="section-hint">Spreek samen met de andere partij hardop een publieke kleur af, en kies ze hieronder. Kies daarna je eigen geheime private kleur — niemand anders mag die kennen.</p>
+
+      <div class="mini-label">Publieke sleutel</div>
+      <div id="public-field"></div>
+
+      <div class="two-col-row keys-private-row hidden" id="private-columns">
+        <div>
+          <div class="mini-label">Jouw private sleutel</div>
+          <div id="private-field"></div>
+        </div>
+        <div>
+          <div class="mini-label" id="private-other-label"></div>
+          <div class="locked-placeholder">🔒 blijft geheim voor jou</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="reveal-section hidden" id="section-exchange">
+      <h3>Mengsels uitwisselen</h3>
+      <p class="section-hint" id="exchange-hint"></p>
+      <div class="two-col-row" id="exchange-columns">
+        <div>
+          <div class="mini-label">Jouw mengsel</div>
+          <div id="mix-display"></div>
+        </div>
+        <div>
+          <div class="mini-label">Ontvangen mengsel</div>
+          <div id="received-field"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="reveal-section hidden" id="section-key">
+      <h3>Gedeelde geheime sleutel</h3>
+      <p class="section-hint" id="key-hint"></p>
+      <div id="key-display"></div>
+    </section>
+  </div>
+
+  <div id="spion-screen" class="screen hidden">
+    <section class="reveal-section" id="spion-section-public">
+      <h3>Onderschepte publieke sleutel</h3>
+      <p class="section-hint">Vul de RGB-code in die je de deelnemers hoorde afspreken.</p>
+      <div id="spion-public-field"></div>
+    </section>
+
+    <section class="reveal-section hidden" id="spion-section-mixes">
+      <h3>Onderschepte mengsels</h3>
+      <p class="section-hint">Vul in wat je de verzender en de ontvanger hoorde doorgeven. Zodra je beide mengsels hebt, kan je beginnen kraken.</p>
+      <div class="two-col-row">
+        <div>
+          <div class="mini-label">Mengsel van de verzender</div>
+          <div id="spion-mixA-field"></div>
+        </div>
+        <div>
+          <div class="mini-label">Mengsel van de ontvanger</div>
+          <div id="spion-mixB-field"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="reveal-section hidden" id="spion-section-tool">
+      <h3>Kraak de private sleutels</h3>
+      <p class="section-hint" id="spion-tool-hint">Kies een kandidaat-kleur en bekijk welk mengsel dat zou geven met de publieke kleur. Vergelijk dat zelf visueel met het onderschepte mengsel hierboven — de app zegt je niet of je juist zit.</p>
+      <div class="two-col-row">
+        <div>
+          <div class="mini-label">Op zoek naar de private sleutel van de verzender</div>
+          <div id="spion-candidateA-field"></div>
+          <div id="spion-candidateA-result"></div>
+          <div class="cracked-key-box hidden" id="spion-crackedA-box">
+            <div class="mini-label">Gekraakte sleutel (mengsel met de ontvanger)</div>
+            <div id="spion-crackedA-display"></div>
+          </div>
+        </div>
+        <div>
+          <div class="mini-label">Op zoek naar de private sleutel van de ontvanger</div>
+          <div id="spion-candidateB-field"></div>
+          <div id="spion-candidateB-result"></div>
+          <div class="cracked-key-box hidden" id="spion-crackedB-box">
+            <div class="mini-label">Gekraakte sleutel (mengsel met de verzender)</div>
+            <div id="spion-crackedB-display"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+  // 25 kleuren (5x5-rooster): elke combinatie van {0,120,240} per kanaal,
+  // op zwart en bijna-wit na -- gebruikt als klikbaar palet bij "gemiddeld".
+  // Hue (met verzadiging als tweebreker) van een kleur, om het rooster als een
+  // rustige regenboogvloeiing te tonen in plaats van in willekeurige volgorde.
+  function hueOf(c){
+    const r = c.r / 255, g = c.g / 255, b = c.b / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    const delta = max - min;
+    if (delta === 0) return -1; // grijstinten: helemaal vooraan
+    let h;
+    if (max === r) h = ((g - b) / delta) % 6;
+    else if (max === g) h = (b - r) / delta + 2;
+    else h = (r - g) / delta + 4;
+    h *= 60;
+    if (h < 0) h += 360;
+    return h;
+  }
+  function lightnessOf(c){ return (Math.max(c.r, c.g, c.b) + Math.min(c.r, c.g, c.b)) / 2; }
+
+  function buildGemiddeldPalette(){
+    const vals = [0, 120, 240];
+    const colors = [];
+    vals.forEach((r) => vals.forEach((g) => vals.forEach((b) => {
+      if (r === 0 && g === 0 && b === 0) return;
+      if (r === 240 && g === 240 && b === 240) return;
+      colors.push({ r, g, b });
+    })));
+    colors.sort((a, b) => {
+      const hueDiff = hueOf(a) - hueOf(b);
+      if (hueDiff !== 0) return hueDiff;
+      return lightnessOf(b) - lightnessOf(a);
+    });
+    return colors;
+  }
+  const GEMIDDELD_PALETTE = buildGemiddeldPalette();
+
+  const DIFFICULTIES = {
+    gemiddeld: { label: 'Gemiddeld', countLabel: '25' },
+    moeilijk:  { label: 'Moeilijk',  countLabel: '10.648' }
+  };
+
+  // ---- pure kleur-wiskunde -------------------------------------------------
+  // Verhoudingen (2/3-1/3 en 3/4-1/4) komen bewust nergens in de UI voor.
+  function firstMix(pub, priv){
+    return { r: (2 * pub.r + priv.r) / 3, g: (2 * pub.g + priv.g) / 3, b: (2 * pub.b + priv.b) / 3 };
+  }
+  function deriveShared(mix, priv){
+    return { r: (3 * mix.r + priv.r) / 4, g: (3 * mix.g + priv.g) / 4, b: (3 * mix.b + priv.b) / 4 };
+  }
+  // Publieke/private kleuren liggen op een rooster van veelvouden van 12 (zodat
+  // /3 altijd exact uitkomt); mengsels zijn altijd veelvouden van 4 (voor de /4).
+  function snapToGrid(v, step){
+    const snapped = Math.round(v / step) * step;
+    return Math.max(0, Math.min(252, snapped));
+  }
+  function sameColor(a, b){
+    return !!a && !!b && a.r === b.r && a.g === b.g && a.b === b.b;
+  }
+
+  function rgbCss(c){ return `rgb(${c.r}, ${c.g}, ${c.b})`; }
+  function rgbText(c){ return `rgb(${c.r}, ${c.g}, ${c.b})`; }
+
+  // Toont een mengresultaat door het staal te laten "vervloeien" van de
+  // startkleur naar de eindkleur, met een korte wobble/verzadigingspuls die
+  // aan het mengen van verf doet denken. Geeft de wrapper terug zodat er nog
+  // extra inhoud (zoals de sleutel-vergelijking) aan toegevoegd kan worden.
+  function renderAnimatedMix(container, fromColor, toColor, label, showRgb){
+    if (showRgb === undefined) showRgb = true;
+    container.innerHTML = '';
+    const display = document.createElement('div');
+    display.className = 'color-display';
+
+    const swatch = document.createElement('div');
+    swatch.className = 'swatch-preview mixing';
+    swatch.style.background = rgbCss(fromColor);
+    display.appendChild(swatch);
+
+    if (showRgb){
+      const chip = document.createElement('span');
+      chip.className = 'rgb-chip';
+      chip.textContent = rgbText(toColor);
+      display.appendChild(chip);
+    }
+
+    if (label){
+      const labelEl = document.createElement('span');
+      labelEl.className = 'color-label';
+      labelEl.textContent = label;
+      display.appendChild(labelEl);
+    }
+
+    container.appendChild(display);
+
+    void swatch.offsetWidth; // forceer reflow zodat de transitie effectief start vanaf fromColor
+    requestAnimationFrame(() => {
+      // Zelfde duur/curve als de mixPulse-rotatie (CSS-vars --mix-duration/--mix-timing),
+      // zodat kleur en rotatie altijd exact synchroon lopen.
+      swatch.style.transition = 'background-color var(--mix-duration) var(--mix-timing)';
+      swatch.style.background = rgbCss(toColor);
+    });
+    setTimeout(() => swatch.classList.remove('mixing'), 1700); // moet gelijk blijven aan --mix-duration
+
+    return display;
+  }
+
+  // Toont een geanimeerd mengresultaat gevolgd door de "X = 3 · Y"-vergelijking
+  // (dezelfde weergave voor zowel de echte gedeelde sleutel als een gekraakte
+  // kandidaat-sleutel bij de spion).
+  function renderKeyEquation(container, fromColor, keyColor, label){
+    const { r, g, b } = keyColor;
+    const minVal = Math.min(r, g, b);
+    const rotationKey = minVal / 3;
+    renderAnimatedMix(container, fromColor, keyColor, label);
+    const highlight = document.createElement('div');
+    highlight.className = 'key-highlight';
+    highlight.innerHTML = `
+      <div class="key-equation"><span class="key-number">${minVal}</span><span class="key-operator">= 3 &middot;</span><span class="key-number">${rotationKey}</span></div>
+      <div class="key-caption">gebruik ${rotationKey} als rotatiesleutel</div>
+    `;
+    container.appendChild(highlight);
+  }
+
+  // Toont welke kandidaat-kleur gekozen werd en welk mengsel die zou geven:
+  // "Private sleutel: (kleur) levert (mengsel)". Het mengsel-staal is geanimeerd
+  // en toont bewust geen RGB-code -- de spion vergelijkt dat zelf visueel.
+  function renderCandidateSummary(container, candidateColor, publicColor, mixColor){
+    container.innerHTML = '';
+    const row = document.createElement('div');
+    row.className = 'candidate-summary';
+
+    const left = document.createElement('div');
+    left.className = 'color-display';
+    left.innerHTML = `<div class="swatch-preview" style="background:${rgbCss(candidateColor)}"></div><span class="color-label">Private sleutel</span>`;
+    row.appendChild(left);
+
+    const arrow = document.createElement('span');
+    arrow.className = 'candidate-summary-arrow';
+    arrow.textContent = 'levert';
+    row.appendChild(arrow);
+
+    const right = document.createElement('div');
+    row.appendChild(right);
+
+    container.appendChild(row);
+    renderAnimatedMix(right, publicColor, mixColor, 'Mengsel', false);
+  }
+
+  // ---- klikbaar kleurenpalet (moeilijkheid "gemiddeld") -------------------
+  function createSwatchGrid(container, { palette, initial, onPick }){
+    const grid = document.createElement('div');
+    grid.className = 'swatch-grid';
+    palette.forEach((c) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'swatch-btn' + (sameColor(c, initial) ? ' selected' : '');
+      btn.style.background = rgbCss(c);
+      btn.setAttribute('aria-label', rgbText(c));
+      btn.addEventListener('click', () => {
+        [...grid.children].forEach((ch) => ch.classList.remove('selected'));
+        btn.classList.add('selected');
+        onPick(c);
+      });
+      grid.appendChild(btn);
+    });
+    container.appendChild(grid);
+  }
+
+  // ---- RGB-schuifbalken (moeilijkheid "moeilijk", en alle mengsel-velden) --
+  function createRgbSliders(container, { step, initial, onChange }){
+    const wrap = document.createElement('div');
+    wrap.className = 'rgb-sliders';
+
+    const preview = document.createElement('div');
+    preview.className = 'slider-preview';
+    wrap.appendChild(preview);
+
+    const current = { r: 120, g: 120, b: 120, ...initial };
+    ['r', 'g', 'b'].forEach((ch) => { current[ch] = snapToGrid(current[ch], step); });
+
+    function updatePreview(){ preview.style.background = rgbCss(current); }
+
+    ['r', 'g', 'b'].forEach((ch) => {
+      const row = document.createElement('div');
+      row.className = 'slider-row';
+      const label = document.createElement('span');
+      label.className = 'slider-channel-label';
+      label.textContent = ch.toUpperCase();
+      const input = document.createElement('input');
+      input.type = 'range';
+      input.min = 0; input.max = 252; input.step = step;
+      input.value = current[ch];
+      const valueEl = document.createElement('span');
+      valueEl.className = 'slider-value';
+      valueEl.textContent = current[ch];
+
+      input.addEventListener('input', () => {
+        current[ch] = parseInt(input.value, 10);
+        valueEl.textContent = current[ch];
+        updatePreview();
+        onChange({ ...current });
+      });
+
+      row.appendChild(label);
+      row.appendChild(input);
+      row.appendChild(valueEl);
+      wrap.appendChild(row);
+    });
+
+    updatePreview();
+    container.appendChild(wrap);
+    onChange({ ...current });
+  }
+
+  // ---- herbruikbaar kleurenveld: swatches (gemiddeld) of RGB-schuifbalken
+  // (moeilijk/mengsels), altijd met een live voorbeeldstaal. Vertegenwoordigt
+  // een écht afgesproken/gekozen kleur: vereist een expliciete "Bevestigen"-
+  // klik die telkens een nieuwe sectie eronder onthult.
+  function createColorField(container, { step, placeholder, onConfirm }){
+    container.innerHTML = '';
+    const wrap = document.createElement('div');
+    wrap.className = 'color-field';
+
+    const summary = document.createElement('button');
+    summary.type = 'button';
+    summary.className = 'color-field-summary';
+    wrap.appendChild(summary);
+
+    const panel = document.createElement('div');
+    panel.className = 'color-field-panel';
+    wrap.appendChild(panel);
+
+    container.appendChild(wrap);
+
+    let current = null;
+    let open = false;
+
+    function renderSummary(){
+      if (current){
+        summary.innerHTML = `<span class="mini-swatch" style="background:${rgbCss(current)}"></span><span class="rgb-chip">${rgbText(current)}</span><span class="change-label">Wijzig</span>`;
+      } else {
+        summary.innerHTML = `<span class="mini-swatch placeholder"></span><span class="change-label">${placeholder || 'Kies kleur'}</span>`;
+      }
+    }
+
+    function renderPanel(){
+      panel.innerHTML = '';
+      panel.classList.toggle('open', open);
+      if (!open) return;
+
+      let pending = current ? { ...current } : null;
+
+      if (step === 12 && difficulty === 'gemiddeld'){
+        createSwatchGrid(panel, {
+          palette: GEMIDDELD_PALETTE,
+          initial: pending,
+          onPick: (c) => { pending = c; }
+        });
+      } else {
+        createRgbSliders(panel, {
+          step,
+          initial: pending,
+          onChange: (c) => { pending = c; }
+        });
+      }
+
+      const confirmBtn = document.createElement('button');
+      confirmBtn.type = 'button';
+      confirmBtn.className = 'primary';
+      confirmBtn.textContent = 'Bevestigen';
+      confirmBtn.addEventListener('click', () => {
+        if (!pending) return;
+        current = {
+          r: snapToGrid(pending.r, step),
+          g: snapToGrid(pending.g, step),
+          b: snapToGrid(pending.b, step)
+        };
+        open = false;
+        renderSummary();
+        renderPanel();
+        onConfirm(current);
+      });
+      panel.appendChild(confirmBtn);
+    }
+
+    summary.addEventListener('click', () => { open = !open; renderPanel(); });
+
+    renderSummary();
+    renderPanel();
+  }
+
+  // ---- levend kleurenveld voor de kraaktool: elke klik/sleep werkt meteen
+  // door, zonder bevestiging, want een spion wil snel veel kandidaten proberen.
+  function createLiveColorField(container, { step, onChange }){
+    container.innerHTML = '';
+    if (step === 12 && difficulty === 'gemiddeld'){
+      createSwatchGrid(container, { palette: GEMIDDELD_PALETTE, initial: null, onPick: onChange });
+    } else {
+      createRgbSliders(container, { step, initial: null, onChange });
+    }
+  }
+
+  // ---- rol / moeilijkheid ---------------------------------------------------
+  let role = null; // pas een scherm tonen nadat de gebruiker expliciet een rol koos
+  let difficulty = 'gemiddeld';
+
+  const rolePills = document.querySelectorAll('#role-pills .pill');
+  const difficultyPills = document.querySelectorAll('#difficulty-pills .pill');
+  const resetBtn = document.getElementById('reset-btn');
+  const rolePrompt = document.getElementById('role-prompt');
+  const deelnemerScreen = document.getElementById('deelnemer-screen');
+  const spionScreen = document.getElementById('spion-screen');
+
+  function isParticipant(r){ return r === 'verzender' || r === 'ontvanger'; }
+
+  function renderActiveScreen(){
+    if (!role) return;
+    if (isParticipant(role)) startDeelnemer(); else startSpion();
+  }
+
+  function setRole(r){
+    role = r;
+    rolePills.forEach((p) => p.classList.toggle('active', p.dataset.value === r));
+    rolePrompt.classList.add('hidden');
+    deelnemerScreen.classList.toggle('hidden', !isParticipant(r));
+    spionScreen.classList.toggle('hidden', r !== 'spion');
+    renderActiveScreen();
+  }
+  function setDifficulty(d){
+    difficulty = d;
+    difficultyPills.forEach((p) => p.classList.toggle('active', p.dataset.value === d));
+    renderActiveScreen();
+  }
+
+  // ---- Verzender/ontvanger-modus ---------------------------------------------
+  let publicColor = null, privateColor = null, myMix = null, receivedMix = null, sharedSecret = null;
+
+  const sectionExchange = document.getElementById('section-exchange');
+  const sectionKey = document.getElementById('section-key');
+  const privateColumns = document.getElementById('private-columns');
+  const exchangeColumns = document.getElementById('exchange-columns');
+
+  function startDeelnemer(){
+    publicColor = privateColor = myMix = receivedMix = sharedSecret = null;
+    privateColumns.classList.add('hidden');
+    sectionExchange.classList.add('hidden');
+    sectionKey.classList.add('hidden');
+
+    // Verzender: eigen kant links, andere partij rechts. Ontvanger: omgekeerd --
+    // zo staat de "zender" visueel links en de "ontvanger" rechts, zoals in een
+    // klassiek zender-ontvanger-schema.
+    const reversed = role === 'ontvanger';
+    privateColumns.classList.toggle('reversed', reversed);
+    exchangeColumns.classList.toggle('reversed', reversed);
+
+    const otherRoleLabel = role === 'verzender' ? 'de ontvanger' : 'de verzender';
+    document.getElementById('private-other-label').textContent = `Private sleutel van ${otherRoleLabel}`;
+    document.getElementById('exchange-hint').textContent =
+      `Dit ontstaat automatisch uit de publieke en jouw private kleur. Deel de RGB-code hardop met ${otherRoleLabel}, en vul in wat ${otherRoleLabel} met jou deelde.`;
+    document.getElementById('key-hint').textContent = role === 'verzender'
+      ? 'Dit is het mengsel van het ontvangen mengsel met jouw private kleur. De laagste van de drie waarden is jullie gedeelde geheime sleutel — gebruik die om je boodschap op papier te versleutelen.'
+      : 'Dit is het mengsel van het ontvangen mengsel met jouw private kleur. De laagste van de drie waarden is jullie gedeelde geheime sleutel — gebruik die om de boodschap die je ontvangt op papier te ontcijferen.';
+
+    createColorField(document.getElementById('public-field'), {
+      step: 12,
+      placeholder: 'Kies publieke kleur',
+      onConfirm: (c) => {
+        publicColor = c;
+        privateColumns.classList.remove('hidden');
+        startPrivateField();
+      }
+    });
+  }
+
+  function startPrivateField(){
+    createColorField(document.getElementById('private-field'), {
+      step: 12,
+      placeholder: 'Kies private kleur',
+      onConfirm: (c) => {
+        privateColor = c;
+        myMix = firstMix(publicColor, privateColor);
+        renderAnimatedMix(document.getElementById('mix-display'), publicColor, myMix);
+        sectionExchange.classList.remove('hidden');
+        startReceivedField();
+      }
+    });
+  }
+
+  function startReceivedField(){
+    createColorField(document.getElementById('received-field'), {
+      step: 4,
+      placeholder: 'Vul ontvangen mengsel in',
+      onConfirm: (c) => {
+        receivedMix = c;
+        sharedSecret = deriveShared(receivedMix, privateColor);
+        renderKey();
+        sectionKey.classList.remove('hidden');
+      }
+    });
+  }
+
+  function renderKey(){
+    renderKeyEquation(document.getElementById('key-display'), receivedMix, sharedSecret, 'Gedeelde geheime sleutel (mengsel)');
+  }
+
+  // ---- Spion-modus --------------------------------------------------------------
+  let spionPublic = null, spionMixA = null, spionMixB = null;
+  let spionCandidateA = null, spionCandidateB = null;
+
+  const spionSectionMixes = document.getElementById('spion-section-mixes');
+  const spionSectionTool = document.getElementById('spion-section-tool');
+  const spionCrackedABox = document.getElementById('spion-crackedA-box');
+  const spionCrackedBBox = document.getElementById('spion-crackedB-box');
+
+  function startSpion(){
+    spionPublic = spionMixA = spionMixB = null;
+    spionCandidateA = spionCandidateB = null;
+    spionSectionMixes.classList.add('hidden');
+    spionSectionTool.classList.add('hidden');
+    spionCrackedABox.classList.add('hidden');
+    spionCrackedBBox.classList.add('hidden');
+    document.getElementById('spion-tool-hint').textContent =
+      `Kies een kandidaat-kleur en bekijk welk mengsel dat zou geven met de publieke kleur. Vergelijk dat zelf visueel met het onderschepte mengsel hierboven — de app zegt je niet of je juist zit. Bij deze moeilijkheidsgraad zijn er ${DIFFICULTIES[difficulty].countLabel} mogelijke geheime kleuren.`;
+
+    createColorField(document.getElementById('spion-public-field'), {
+      step: 12,
+      placeholder: 'Vul publieke kleur in',
+      onConfirm: (c) => {
+        spionPublic = c;
+        spionSectionMixes.classList.remove('hidden');
+        startSpionMixFields();
+      }
+    });
+  }
+
+  function startSpionMixFields(){
+    createColorField(document.getElementById('spion-mixA-field'), {
+      step: 4,
+      placeholder: 'Vul mengsel van de verzender in',
+      onConfirm: (c) => { spionMixA = c; updateSpionCrackedB(); maybeRevealSpionTool(); }
+    });
+    createColorField(document.getElementById('spion-mixB-field'), {
+      step: 4,
+      placeholder: 'Vul mengsel van de ontvanger in',
+      onConfirm: (c) => { spionMixB = c; updateSpionCrackedA(); maybeRevealSpionTool(); }
+    });
+  }
+
+  // De kraaktool verschijnt pas nadat BEIDE mengsels zijn ingegeven -- pas dan
+  // heeft kraken van een van beide private sleutels ook echt zin.
+  function maybeRevealSpionTool(){
+    if (!spionMixA || !spionMixB) return;
+    if (!spionSectionTool.classList.contains('hidden')) return;
+    spionSectionTool.classList.remove('hidden');
+    startSpionTool();
+  }
+
+  // Toont, als het benodigde mengsel van de andere partij al is ingevuld, de
+  // sleutel die deze kandidaat-private-sleutel zou opleveren (in dezelfde
+  // "X = 3 · Y"-weergave als bij de echte gedeelde sleutel).
+  function updateSpionCrackedA(){
+    if (spionCandidateA && spionMixB){
+      spionCrackedABox.classList.remove('hidden');
+      const cracked = deriveShared(spionMixB, spionCandidateA);
+      renderKeyEquation(document.getElementById('spion-crackedA-display'), spionMixB, cracked);
+    } else {
+      spionCrackedABox.classList.add('hidden');
+    }
+  }
+  function updateSpionCrackedB(){
+    if (spionCandidateB && spionMixA){
+      spionCrackedBBox.classList.remove('hidden');
+      const cracked = deriveShared(spionMixA, spionCandidateB);
+      renderKeyEquation(document.getElementById('spion-crackedB-display'), spionMixA, cracked);
+    } else {
+      spionCrackedBBox.classList.add('hidden');
+    }
+  }
+
+  // Twee onafhankelijke kraaktools naast elkaar -- links voor de verzender,
+  // rechts voor de ontvanger. Elke klik/sleep op een kandidaatkleur toont
+  // meteen "Private sleutel: (kleur) levert (mengsel)" (geanimeerd, zonder
+  // RGB-code: de spion vergelijkt dat zelf visueel met het onderschepte
+  // mengsel hierboven) en werkt de gekraakte-sleutel-vergelijking bij.
+  function startSpionTool(){
+    createLiveColorField(document.getElementById('spion-candidateA-field'), {
+      step: 12,
+      onChange: (c) => {
+        spionCandidateA = c;
+        const candidateMix = firstMix(spionPublic, c);
+        renderCandidateSummary(document.getElementById('spion-candidateA-result'), c, spionPublic, candidateMix);
+        updateSpionCrackedA();
+      }
+    });
+    createLiveColorField(document.getElementById('spion-candidateB-field'), {
+      step: 12,
+      onChange: (c) => {
+        spionCandidateB = c;
+        const candidateMix = firstMix(spionPublic, c);
+        renderCandidateSummary(document.getElementById('spion-candidateB-result'), c, spionPublic, candidateMix);
+        updateSpionCrackedB();
+      }
+    });
+  }
+
+  // ---- wiring -------------------------------------------------------------
+  rolePills.forEach((p) => p.addEventListener('click', () => setRole(p.dataset.value)));
+  difficultyPills.forEach((p) => p.addEventListener('click', () => setDifficulty(p.dataset.value)));
+  resetBtn.addEventListener('click', () => renderActiveScreen());
+
+  setDifficulty('gemiddeld');
+})();
+</script>
+
+</body>
+</html>

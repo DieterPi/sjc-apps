@@ -1,0 +1,310 @@
+:root{
+  /* Gedeelde timing voor het "mengen"-effect (rotatie + kleurovergang), zodat
+     beide altijd exact synchroon lopen -- zie ook renderAnimatedMix() in JS. */
+  --mix-duration: 1.7s;
+  --mix-timing: cubic-bezier(0.68, -0.6, 0.32, 1.6);
+}
+
+.hidden{ display:none; }
+
+.role-prompt{
+  text-align:center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 13.5px;
+}
+
+.control-label{
+  font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--text-muted); font-weight: 700;
+}
+
+.controls{
+  display:flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-end;
+  margin-bottom: 22px;
+  padding: 16px 20px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(90, 90, 150, 0.12);
+}
+.control-group{ display:flex; flex-direction:column; gap: 6px; align-items:center; }
+
+.control-sep{
+  align-self: stretch;
+  width: 1px;
+  margin: 4px 4px;
+  background: var(--panel-border);
+}
+@media (max-width: 700px){
+  .control-sep{ display:none; }
+}
+
+button.secondary{
+  font-family:'Space Grotesk', sans-serif; font-weight: 700; font-size: 13px;
+  color: var(--accent); background: #ffffff; border: 1px solid var(--panel-border);
+  border-radius: 10px; padding: 11px 20px; cursor: pointer;
+  transition: transform 0.1s, background 0.15s;
+}
+button.secondary:hover{ background: var(--panel); }
+button.secondary:active{ transform: scale(0.97); }
+
+.pill-group{ display:flex; gap: 6px; flex-wrap: wrap; justify-content: center; }
+.pill{
+  display: inline-flex;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--panel-border);
+  background: #ffffff;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, border-color 0.15s, opacity 0.15s;
+}
+.pill:hover:not(:disabled){ background: var(--panel); }
+.pill.active{
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #ffffff;
+}
+.pill:disabled{ opacity: 0.4; cursor: not-allowed; }
+.pill-emoji{ margin-right: 6px; font-size: 14px; }
+
+/* ---- reveal sections ---- */
+.reveal-section{
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 16px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 8px 22px rgba(90, 90, 150, 0.14);
+  animation: sectionIn 0.3s ease;
+}
+@keyframes sectionIn{
+  from{ opacity: 0; transform: translateY(-6px); }
+  to{ opacity: 1; transform: translateY(0); }
+}
+.reveal-section h3{
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 15.5px;
+  margin: 0 0 6px;
+}
+.section-hint{
+  font-size: 12.5px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  margin: 0 0 14px;
+}
+.mini-label{
+  font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase;
+  color: var(--text-muted); font-weight: 700; margin-bottom: 8px;
+}
+
+.two-col-row{ display:flex; gap: 18px; flex-wrap: wrap; }
+.two-col-row > div{ flex: 1 1 220px; min-width: 0; }
+.two-col-row.reversed{ flex-direction: row-reverse; }
+
+.keys-private-row{
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--panel-border);
+}
+@media (max-width: 700px){
+  .two-col-row.reversed{ flex-direction: column; }
+}
+
+.locked-placeholder{
+  display:flex; align-items:center; justify-content:center;
+  height: calc(100% - 20px);
+  min-height: 80px;
+  padding: 20px;
+  background: #ffffff80;
+  border-radius: 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align:center;
+}
+
+/* ---- color field (confirm-based) ---- */
+.color-field-summary{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--panel-border);
+  background: #ffffff;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  color: var(--text);
+  transition: background 0.15s;
+}
+.color-field-summary:hover{ background: var(--panel); }
+
+.mini-swatch{
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px var(--tile-shadow);
+  flex: 0 0 auto;
+}
+.mini-swatch.placeholder{
+  background: repeating-linear-gradient(45deg, #ffffff, #ffffff 4px, var(--panel) 4px, var(--panel) 8px);
+  border: 1px dashed var(--panel-border);
+}
+.change-label{
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 11.5px;
+  letter-spacing: 0.3px;
+}
+
+.color-field-panel{ display:none; margin-top: 12px; }
+.color-field-panel.open{ display:block; }
+
+.color-field-panel button.primary,
+.live-color-field button.primary{ padding: 10px 22px; font-size: 13px; margin-top: 10px; }
+
+/* ---- klikbaar kleurenpalet (moeilijkheid "gemiddeld") ---- */
+.swatch-grid{
+  display:grid;
+  gap: 6px;
+  grid-template-columns: repeat(5, 1fr);
+  max-width: 260px;
+  margin: 0 auto 4px;
+}
+.swatch-btn{
+  aspect-ratio: 1 / 1;
+  border-radius: 8px;
+  border: 2px solid #ffffff;
+  cursor: pointer;
+  box-shadow: 0 3px 8px var(--tile-shadow);
+  transition: transform 0.12s, box-shadow 0.15s;
+}
+.swatch-btn:hover{ transform: translateY(-2px); }
+.swatch-btn.selected{ border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent); }
+
+/* ---- RGB-schuifbalken (moeilijkheid "moeilijk" en alle mengsel-velden) ---- */
+.rgb-sliders{ display:flex; flex-direction:column; gap: 10px; }
+.slider-preview{
+  width: 48px; height: 48px;
+  border-radius: 12px;
+  border: 2px solid #ffffff;
+  box-shadow: 0 3px 8px var(--tile-shadow);
+  margin-bottom: 4px;
+}
+.slider-row{ display:flex; align-items:center; gap: 12px; }
+.slider-channel-label{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px; font-weight: 700; color: var(--text-muted);
+  width: 12px; flex: 0 0 auto;
+}
+.slider-row input[type=range]{
+  flex: 1 1 auto;
+  accent-color: var(--accent);
+}
+.slider-value{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px; font-weight: 700; color: var(--text);
+  width: 32px; text-align:right; flex: 0 0 auto;
+}
+
+/* ---- read-only color display ---- */
+.color-display{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap: 6px;
+  text-align:center;
+}
+.swatch-preview{
+  width: 64px; height: 64px;
+  border-radius: 14px;
+  box-shadow: 0 3px 8px var(--tile-shadow);
+  border: 2px solid #ffffff;
+}
+/* Volle rotatie tijdens het mengen, met easeInOutBack als timing: traag op
+   gang, snel door het midden, en weer traag (met een kleine veer) tot stilstand. */
+.swatch-preview.mixing{ animation: mixPulse var(--mix-duration) var(--mix-timing); }
+@keyframes mixPulse{
+  0%{ transform: rotate(0deg); }
+  100%{ transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce){
+  .swatch-preview.mixing{ animation: none; }
+}
+.color-label{
+  font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--text-muted); font-weight: 700;
+}
+.rgb-chip{
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  background: #ffffff;
+  border: 1px solid var(--panel-border);
+  border-radius: 999px;
+  padding: 3px 10px;
+  color: var(--text);
+}
+
+/* ---- gedeelde sleutel ---- */
+.key-highlight{ margin-top: 14px; text-align:center; }
+.key-equation{
+  display:flex;
+  align-items:baseline;
+  justify-content:center;
+  gap: 8px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+}
+.key-equation .key-number{
+  font-size: 30px;
+  color: var(--accent);
+}
+.key-equation .key-operator{
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+}
+.key-caption{
+  margin-top: 6px;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
+/* ---- kraaktool ---- */
+.live-color-field{ margin-bottom: 4px; }
+
+.candidate-summary{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap: 14px;
+  margin: 14px 0 4px;
+  flex-wrap: wrap;
+}
+.candidate-summary-arrow{
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.cracked-key-box{
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--panel-border);
+}
