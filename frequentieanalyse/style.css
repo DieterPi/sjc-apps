@@ -1,7 +1,7 @@
 :root{
   --freq-pending: #b3540a;
   --freq-solved: var(--accent);
-  --freq-used: #a89ce8;
+  --freq-used: #a09bd4;
 }
 
 .intro{

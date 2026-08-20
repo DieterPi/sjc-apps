@@ -12,10 +12,10 @@
   --tile-shadow: rgba(60, 66, 110, 0.16);
   --tile-text: #2f3350;
 
-  --accent: #6f63f5;
-  --accent-2: #8b7ff8;
+  --accent: #5a51b8;
+  --accent-2: #7c75cc;
 
-  --p1: #6f63f5;
+  --p1: #5a51b8;
   --p1-soft: #e3e0fd;
   --p2: #ef8a3d;
   --p2-soft: #fde8d4;
@@ -153,7 +153,7 @@ button.primary{
   font-family:'Space Grotesk', sans-serif; font-weight: 700; font-size: 14px;
   color: #ffffff; background: var(--accent); border: none; border-radius: 10px;
   padding: 12px 26px; cursor: pointer; transition: transform 0.1s, filter 0.15s;
-  box-shadow: 0 8px 18px rgba(111, 99, 245, 0.35);
+  box-shadow: 0 8px 18px rgba(90, 81, 184, 0.35);
 }
 button.primary:hover{ filter: brightness(1.06); }
 button.primary:active{ transform: scale(0.97); }

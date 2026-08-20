@@ -84,7 +84,7 @@ button.secondary:active{ transform: scale(0.97); }
 
 .text-panel.input-panel{
   background: var(--p1-soft);
-  border-color: #c9c3f9;
+  border-color: #cdc8ee;
 }
 .text-panel.input-panel .panel-label{ color: var(--p1); }
 
@@ -202,7 +202,7 @@ button.secondary:active{ transform: scale(0.97); }
   font-weight: 700;
   font-size: 22px;
   cursor: pointer;
-  box-shadow: 0 6px 14px rgba(111, 99, 245, 0.3);
+  box-shadow: 0 6px 14px rgba(90, 81, 184, 0.3);
   transition: transform 0.1s, filter 0.15s, opacity 0.15s;
 }
 .step-btn:hover:not(:disabled){ filter: brightness(1.06); }
