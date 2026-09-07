@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Datalek</title>
+<link rel="stylesheet" href="../shared/base.css">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+</head>
+<body>
+
+<div class="wrap">
+  <div class="masthead">
+    <div class="eyebrow"><a href="../" style="color:inherit; text-decoration:none;">← sjc-apps</a> · zoek wachtwoorden in het Adobe datalek</div>
+    <h1>Data<span class="sup">lek</span></h1>
+    <p class="intro">Kopieer de hash en zoek ermee in het datalek. Combineer de hints van de gebruikers tot het juiste wachtwoord en vul het in op je blad. Zit je vast? Vraag een extra tip.</p>
+  </div>
+
+  <div class="progress-dots" id="dots"></div>
+
+  <div class="deck-status">
+    <span id="position">Hash 1 van 1</span>
+    <span id="pinned-note"></span>
+  </div>
+
+  <div class="text-panel hash-panel">
+    <div class="panel-label">
+      Hash
+      <button class="copy-btn" id="copy-btn" title="Kopieer de hash"><i class="fa-solid fa-copy fa-fw" id="copy-icon"></i><span id="copy-label">Kopieer</span></button>
+    </div>
+    <div class="hash-text" id="hash-text"></div>
+  </div>
+
+  <div class="tip-area">
+    <div class="text-panel tip-panel hidden" id="tip-panel">
+      <div class="panel-label"><i class="fa-solid fa-lightbulb fa-fw"></i>&nbsp;Extra tips</div>
+      <ul class="tip-list" id="tip-list"></ul>
+    </div>
+    <button class="secondary tip-btn" id="tip-btn"><i class="fa-solid fa-lightbulb fa-fw"></i>&nbsp;<span id="tip-btn-label">Toon een tip</span></button>
+  </div>
+
+  <div class="nav-row">
+    <button class="secondary" id="prev-btn">← Vorige</button>
+    <button class="secondary" id="next-btn">Volgende →</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  /* ------------------------------------------------------------------ *
+   *  CONFIG
+   *
+   *  Vul hieronder alle hashes in die op het blad kunnen staan.
+   *  Per hash:
+   *    hash : exact zoals de leerling ze moet kopiëren.
+   *    tips : lijst met extra hints, van vaag naar concreet. De leerling
+   *           kan ze één voor één opvragen. Laat leeg ([]) als er geen
+   *           extra tip is — de tip-knop verdwijnt dan voor die hash.
+   *
+   *  De eerste hash in de lijst is de meest voorkomende: die blijft
+   *  vooraan staan (zet PIN_FIRST op false om ook die mee te schudden).
+   *  Alle andere hashes komen bij elke herlaadbeurt in een nieuwe
+   *  willekeurige volgorde.
+   * ------------------------------------------------------------------ */
+  const HASHES = [
+    { hash: "EQ7fIpT7i/Q=",             tips: ["Deze hash komt het vaakst voor in het hele bestand."] },
+    { hash: "F9ufzyNBJfE",              tips: ["Waarschijnlijk bevat het wachtwoord op het einde een getal."] },
+    { hash: "a1/oJIA0llDioxG6CatHBw",   tips: [] },
+    { hash: "VU9vTyvsXxo",              tips: [] },
+    { hash: "vp6d18mfGL+5n2auThm2+Q",   tips: ["Eén bepaalde tip komt wel drie keer voor, zoek dit merk desnoods even op..."] },
+    { hash: "7ePOHpjACv8",              tips: ["Eén van de tips verwijst naar de woonplaats van het wachtwoord."] },
+    { hash: "Vr+TMBpSLuk=",             tips: ["Eén van de tips is de auteur van een boekenreeks met een link naar het wachtwoord."] },
+    { hash: "dCgB24yq9Bw",              tips: [] },
+    { hash: "MzCOJpYGEN4=",             tips: ["Surname betekent familienaam.", "Bekijk de e-mailadressen die bij deze hash horen — de naam zit erin verwerkt."] },
+    { hash: "YlQe6pUMdsTxHUX3hQObgQ",   tips: [] },
+    { hash: "y7F6CyUyVM/ioxG6CatHBw=",  tips: [] },
+    { hash: "hHor1+o9rMI",              tips: ["Zoek het symbool of de vlag van de Amerikaanse staat op."] },
+    { hash: "Wq47rZpht3df+E5Ulu/AzA",   tips: [] }
+  ];
+
+  const PIN_FIRST = true;
+
+  const $ = (id) => document.getElementById(id);
+  const dots = $('dots'),
+    position = $('position'), pinnedNote = $('pinned-note'),
+    hashText = $('hash-text'), copyBtn = $('copy-btn'), copyIcon = $('copy-icon'), copyLabel = $('copy-label'),
+    tipPanel = $('tip-panel'), tipList = $('tip-list'),
+    tipBtn = $('tip-btn'), tipBtnLabel = $('tip-btn-label'),
+    prevBtn = $('prev-btn'), nextBtn = $('next-btn');
+
+  let order = [];        // indices in HASHES, in display order
+  let current = 0;
+  let tipsShown = {};     // HASHES-index -> hoeveel tips zichtbaar
+  const visited = new Set();
+
+  function shuffleInPlace(arr){
+    for (let i = arr.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
+  function buildOrder(){
+    const all = HASHES.map((_, i) => i);
+    if (PIN_FIRST && all.length > 1){
+      order = [all[0], ...shuffleInPlace(all.slice(1))];
+    } else {
+      order = shuffleInPlace(all);
+    }
+    current = 0;
+    tipsShown = {};
+    visited.clear();
+  }
+
+  const cardIndex = () => order[current];
+  const currentCard = () => HASHES[cardIndex()];
+
+  function buildDots(){
+    dots.innerHTML = '';
+    dots.style.gridTemplateColumns = `repeat(${order.length}, 1fr)`;
+    order.forEach((hi, pos) => {
+      const d = document.createElement('div');
+      d.className = 'pd' + (visited.has(hi) && pos !== current ? ' done' : '') + (pos === current ? ' current' : '');
+      d.title = `Hash ${pos + 1}`;
+      d.addEventListener('click', () => { current = pos; render(); });
+      dots.appendChild(d);
+    });
+  }
+
+  function render(){
+    const card = currentCard(), hi = cardIndex(), n = order.length;
+    visited.add(hi);
+
+    position.textContent = `Hash ${current + 1} van ${n}`;
+    pinnedNote.textContent = (PIN_FIRST && current === 0) ? 'komt het vaakst voor' : '';
+
+    hashText.textContent = card.hash;
+
+    const shown = tipsShown[hi] || 0;
+    const total = card.tips.length;
+
+    tipList.innerHTML = '';
+    card.tips.slice(0, shown).forEach((t) => {
+      const li = document.createElement('li');
+      li.textContent = t;
+      tipList.appendChild(li);
+    });
+    tipPanel.classList.toggle('hidden', shown === 0);
+
+    if (total === 0){
+      tipBtn.classList.add('hidden');
+    } else {
+      tipBtn.classList.remove('hidden');
+      tipBtn.disabled = shown >= total;
+      tipBtnLabel.textContent =
+        shown === 0 ? 'Toon een tip' :
+        shown < total ? 'Nog een tip' : 'Alle tips getoond';
+    }
+
+    prevBtn.disabled = current === 0;
+    nextBtn.disabled = current === n - 1;
+
+    buildDots();
+  }
+
+  function copyHash(){
+    navigator.clipboard.writeText(currentCard().hash).then(() => {
+      copyIcon.className = 'fa-solid fa-check fa-fw';
+      copyLabel.textContent = 'Gekopieerd';
+      setTimeout(() => {
+        copyIcon.className = 'fa-solid fa-copy fa-fw';
+        copyLabel.textContent = 'Kopieer';
+      }, 1200);
+    }).catch(() => {});
+  }
+
+  copyBtn.addEventListener('click', copyHash);
+  hashText.addEventListener('click', copyHash);
+
+  tipBtn.addEventListener('click', () => {
+    const hi = cardIndex();
+    const total = currentCard().tips.length;
+    tipsShown[hi] = Math.min((tipsShown[hi] || 0) + 1, total);
+    render();
+  });
+
+  prevBtn.addEventListener('click', () => { if (current > 0){ current--; render(); } });
+  nextBtn.addEventListener('click', () => { if (current < order.length - 1){ current++; render(); } });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === 'ArrowLeft' && current > 0){ current--; render(); }
+    if (e.key === 'ArrowRight' && current < order.length - 1){ current++; render(); }
+  });
+
+  buildOrder();
+  render();
+})();
+</script>
+
+</body>
+</html>
