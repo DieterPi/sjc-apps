@@ -50,7 +50,7 @@
           bad: true, reply: ['Euh, dat klinkt echt verdacht...', 'Dat ga ik niet doen.'] },
         { t: 'Ik ben nieuw in de buurt. Wat doe jij zoal graag in je vrije tijd?',
           next: 'pet', reply: ['Voetbal bij de reserven van de club, gamen en wandelen met mijn puppy 🐶'] },
-        { t: 'Gewoon babbelen 😄 Ik ben nieuw in Aalst, ken je hier leuke plekken?',
+        { t: 'Gewoon babbelen 😄 Ik ben nieuw in de buurt, ken je hier leuke plekken?',
           next: 'pet', reply: ['Het voetbalplein en de ijssalon zijn top! Ik ga er vaak met mijn puppy naartoe 🐶'] }
       ],
       pet: [
