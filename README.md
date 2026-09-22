@@ -9,3 +9,4 @@ Kleine mini-webapps, gebundeld in één repository met een gedeelde stijl.
 - Frequentieanalyse, kraak een substitutiecijfer door de letterfrequentie te vergelijken en letters te koppelen
 - Kleurmenger, wissel een geheime sleutel uit volgens Diffie-Hellman door kleuren te mengen, of speel de spion die meeluistert
 - Datalek, zoek wachtwoorden terug in het Adobe datalek door hashes te kopiëren en de hints van gebruikers te combineren
+- Wachtwoordjacht, speur de apps van iemands smartphone door en reconstrueer zijn wachtwoord uit de aanwijzingen

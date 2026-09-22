@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Wachtwoordjacht</title>
+<link rel="stylesheet" href="../shared/base.css">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exif-js/2.3.0/exif.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="masthead">
+    <div class="eyebrow"><a href="../" style="color:inherit; text-decoration:none;">← sjc-apps</a> · reconstrueer een wachtwoord op basis van digitale sporen</div>
+    <h1>Wachtwoord<span class="sup">jacht</span></h1>
+    <p class="intro">Mensen delen, vaak onbewust, heel wat info over zichzelf dat ze in hun wachtwoord verwerken. Doorzoek de diverse sociale media en vind info over Seppe.</p>
+  </div>
+
+  <div class="phone-stage" id="phone-stage">
+    <div class="phone">
+      <div class="phone-island"></div>
+      <div class="phone-screen" id="phone-screen">
+
+        <!-- LOCK (pincode) -->
+        <section class="screen lock-screen is-active" data-screen="lock">
+          <div class="statusbar">
+            <span class="sb-time" id="lock-clock">09:41</span>
+            <span class="sb-icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-three-quarters"></i></span>
+          </div>
+          <div class="lock-body">
+            <div class="lock-icon"><i class="fa-solid fa-lock"></i></div>
+            <h2>Gehackte smartphone</h2>
+            <p>Tik hier de pincode in die je kreeg van je leerkracht. Deze code geeft je toegang tot een gehackte smartphone.</p>
+            <div class="pin-dots" id="pin-dots">
+              <span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span><span class="pin-dot"></span>
+            </div>
+            <div class="pin-feedback" id="pin-feedback"></div>
+            <div class="keypad" id="keypad">
+              <button class="key" data-key="1">1</button>
+              <button class="key" data-key="2">2</button>
+              <button class="key" data-key="3">3</button>
+              <button class="key" data-key="4">4</button>
+              <button class="key" data-key="5">5</button>
+              <button class="key" data-key="6">6</button>
+              <button class="key" data-key="7">7</button>
+              <button class="key" data-key="8">8</button>
+              <button class="key" data-key="9">9</button>
+              <span class="key-spacer"></span>
+              <button class="key" data-key="0">0</button>
+              <button class="key key-back" data-key="back" aria-label="Wissen"><i class="fa-solid fa-delete-left"></i></button>
+            </div>
+          </div>
+        </section>
+
+        <!-- HOME -->
+        <section class="screen home-screen" data-screen="home">
+          <div class="statusbar">
+            <span class="sb-time" id="clock">09:41</span>
+            <span class="sb-icons"><i class="fa-solid fa-signal"></i><i class="fa-solid fa-wifi"></i><i class="fa-solid fa-battery-three-quarters"></i></span>
+          </div>
+          <div class="app-icon-grid">
+            <button class="phone-app" data-app="chat">
+              <span class="app-icon-bg"><img src="assets/whatstalk-icon.png" alt=""></span>
+              <span class="app-label">WhatsTalk</span>
+            </button>
+            <button class="phone-app" data-app="mail">
+              <span class="app-icon-bg"><img src="assets/outmail-icon.png" alt=""></span>
+              <span class="app-label">OutMail</span>
+            </button>
+            <button class="phone-app" data-app="photos">
+              <span class="app-icon-bg"><img src="assets/kiekje-icon.png" alt=""></span>
+              <span class="app-label">InstaPic</span>
+            </button>
+            <button class="phone-app" data-app="social">
+              <span class="app-icon-bg"><img src="assets/pinboard-icon.png" alt=""></span>
+              <span class="app-label">PinBoard</span>
+            </button>
+            <button class="phone-app" data-app="maps">
+              <span class="app-icon-bg"><img src="assets/gomaps-icon.png" alt=""></span>
+              <span class="app-label">GoMaps</span>
+            </button>
+            <button class="phone-app" data-app="bruteforce">
+              <span class="app-icon-bg"><img src="assets/bruteforce-icon.png" alt=""></span>
+              <span class="app-label">BruteForce</span>
+            </button>
+            <button class="phone-app" data-app="breach">
+              <span class="app-icon-bg"><img src="assets/pwncheck-icon.png" alt=""></span>
+              <span class="app-label">PwnCheck</span>
+            </button>
+            <button class="phone-app" data-app="brawl">
+              <span class="app-icon-bg"><img src="assets/brawlzone-icon.png" alt=""></span>
+              <span class="app-label">BrawlZone</span>
+            </button>
+            <button class="phone-app" data-app="metacheck">
+              <span class="app-icon-bg"><img src="assets/metacheck-icon.png" alt=""></span>
+              <span class="app-label">MetaCheck</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- KWEBBEL (chat) -->
+        <section class="screen app-screen chat-screen" data-screen="chat">
+          <header class="app-header c-whatstalk">
+            <button class="back-btn" data-back><i class="fa-solid fa-chevron-left"></i></button>
+            <div class="app-header-title"><i class="fa-solid fa-comment-dots"></i> WhatsTalk</div>
+          </header>
+          <div class="app-body chat-body">
+            <div id="wt-login" class="wt-login">
+              <div class="wt-login-icon"><i class="fa-solid fa-comment-dots"></i></div>
+              <div class="wt-login-title">Nieuw gesprek</div>
+              <p class="wt-login-text">Voer het gsm-nummer in van de persoon met wie je wilt chatten.</p>
+              <input type="tel" id="wt-number" class="pw-input" placeholder="04xx xx xx xx" autocomplete="off">
+              <button class="primary pw-check-btn" id="wt-start"><i class="fa-solid fa-paper-plane"></i>&nbsp; Start gesprek</button>
+              <div class="pw-feedback" id="wt-feedback"></div>
+            </div>
+            <div id="wt-chat" class="hidden">
+              <div class="chat-thread-label">Seppe</div>
+              <div class="wt-system">Gesprek gestart</div>
+              <div id="wt-messages"></div>
+              <div id="wt-result" class="wt-system wt-left hidden"></div>
+            </div>
+          </div>
+          <div class="wt-choices hidden" id="wt-choices"></div>
+        </section>
+
+        <!-- POSTDUIF (mail) -->
+        <section class="screen app-screen" data-screen="mail">
+          <header class="app-header c-outmail">
+            <button class="back-btn" data-back><i class="fa-solid fa-chevron-left"></i></button>
+            <div class="app-header-title"><i class="fa-solid fa-paper-plane"></i> OutMail</div>
+          </header>
+          <div class="app-body">
+            <div id="om-login" class="om-login">
+              <div class="om-login-icon"><i class="fa-solid fa-envelope-open-text"></i></div>
+              <div class="om-login-title">Inloggen</div>
+              <label class="om-label" for="om-email">E-mailadres</label>
+              <input type="email" id="om-email" class="pw-input" placeholder="naam@voorbeeld.be" autocomplete="off" autocapitalize="off" spellcheck="false">
+              <label class="om-label" for="om-pass">Wachtwoord</label>
+              <input type="password" id="om-pass" class="pw-input" placeholder="Wachtwoord" autocomplete="off">
+              <button class="primary pw-check-btn" id="om-login-btn"><i class="fa-solid fa-right-to-bracket"></i>&nbsp; Login</button>
+              <div class="pw-feedback" id="om-feedback"></div>
+            </div>
+
+            <div id="om-success" class="om-success hidden">
+              <div class="om-banner">
+                <div class="om-banner-icon"><i class="fa-solid fa-unlock"></i></div>
+                <h2>Gelukt!</h2>
+                <p>Je hebt de mailbox van Seppe gehackt!</p>
+              </div>
+              <p class="om-text">De hackers zijn via het account van Seppe tot bij alle gegevens van het bedrijf geraakt. Alle medewerkers moeten dus beter opletten met het wachtwoord dat ze gebruiken <strong>én</strong> de informatie die ze online plaatsen.</p>
+              <p class="om-text">Meer nog: vaak zijn accounts op andere platformen (social media, games...) gelinkt aan een mailadres. Die wachtwoorden kan je vaak via je mailbox aanpassen, waardoor de hackers toegang hebben tot bijna al jouw accounts!</p>
+              <div class="om-why">
+                <div class="om-why-title"><i class="fa-solid fa-triangle-exclamation"></i> Waarom is dat erg?</div>
+                <p>Als een hacker jouw mailbox binnendringt, kan die persoon:</p>
+                <ul>
+                  <li>privéberichten sturen naar anderen met jouw account</li>
+                  <li>al je verdiende coins en skills opmaken</li>
+                  <li>mails sturen naar al jouw contacten</li>
+                  <li>al je chatberichten lezen</li>
+                  <li>toegang krijgen tot je andere accounts en je wachtwoorden wijzigen of gevoelige informatie misbruiken</li>
+                  <li>...</li>
+                </ul>
+              </div>
+              <div class="om-tip"><i class="fa-solid fa-shield-halved"></i> Het is dus heel belangrijk om gebruik te maken van <strong>unieke en sterke wachtwoorden</strong>, zeker voor je mailbox!</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- KIEKJE (photos) -->
+        <section class="screen app-screen" data-screen="photos">
+          <header class="app-header c-insta">
+            <button class="back-btn" data-back><i class="fa-solid fa-chevron-left"></i></button>
+            <div class="app-header-title"><i class="fa-solid fa-camera"></i> InstaPic</div>
+          </header>
+          <div class="ig-profile">
+            <div class="ig-username">seppe_van_hoof</div>
+            <div class="ig-top">
+              <img class="ig-avatar" src="assets/profile_picture-D442vEOL.png" alt="Profielfoto van Seppe Van Hoof">
+              <div class="ig-stats">
+                <div class="ig-stat"><b>8</b><span>Posts</span></div>
+                <div class="ig-stat"><b>100</b><span>Volgers</span></div>
+                <div class="ig-stat"><b>127</b><span>Volgend</span></div>
+              </div>
+            </div>
+            <div class="ig-name">Seppe Van Hoof</div>
+            <div class="ig-bio">20 jaar | Doglover 🐶 | Chiro ❤️💙</div>
+          </div>
+          <div class="app-body photo-body">
+            <div class="photo-grid">
+                        <div class="photo-tile">
+              <img class="photo-thumb" id="vacation-photo" src="assets/share_pic_01_barcelona-CbhlGV9b.png" alt="Sagrada Família 😍 wat een gebouw!" data-caption="Sagrada Família 😍 wat een gebouw!" data-likes="142" data-name="barcelona.png" data-tags="#barcelona #sagradafamilia" loading="lazy">
+            </div>
+                        <div class="photo-tile">
+              <img class="photo-thumb" src="assets/share_pic_02_duivels-CUX-gYG7.png" alt="Rode Duivels live gezien 🔴🟡⚫" data-caption="Rode Duivels live gezien 🔴🟡⚫" data-likes="203" data-name="duivels.png" data-tags="#reddevils #voetbal" loading="lazy">
+            </div>
+                        <div class="photo-tile">
+              <img class="photo-thumb" src="assets/share_pic_03_chiro-DRwtKVxf.png" alt="Chiro-namiddag 🚩" data-caption="Chiro-namiddag 🚩" data-likes="77" data-name="chiro.png" data-tags="#chiro #bosco" loading="lazy">
+            </div>
+                        <div class="photo-tile">
+              <img class="photo-thumb" src="assets/share_pic_04_eten-C2onNUdR.png" alt="Terrasje met de familie ☀️" data-caption="Terrasje met de familie ☀️" data-likes="58" data-name="eten.png" data-tags="#familie #zon" loading="lazy">
+            </div>
+                        <div class="photo-tile">
+              <img class="photo-thumb" src="assets/share_pic_05_living-De1gJBMX.png" alt="Zondagavond chillen thuis 🛋️" data-caption="Zondagavond chillen thuis 🛋️" data-likes="31" data-name="living.jpg" data-download="assets/living.jpg" data-tags="#thuis #zondag" loading="lazy">
+            </div>
+                        <div class="photo-tile">
+              <img class="photo-thumb" src="assets/share_pic_06_chirokamp-BH68DbQF.png" alt="Chirokamp: groepsfoto van de jongens ⛺" data-caption="Chirokamp: groepsfoto van de jongens ⛺" data-likes="96" data-name="chirokamp.png" data-tags="#chiro #kamp" loading="lazy">
+            </div>
+                        <div class="photo-tile">
+              <img class="photo-thumb" src="assets/share_pic_07_festival-Dhs6AK5G.png" alt="Festivalzomer 🎶" data-caption="Festivalzomer 🎶" data-likes="187" data-name="festival.png" data-tags="#festival #muziek" loading="lazy">
+            </div>
+                        <div class="photo-tile">
+              <img class="photo-thumb" src="assets/share_pic_08_travel-CWC-xdLY.png" alt="Uitzicht over de stad met de vrienden 🌇" data-caption="Uitzicht over de stad met de vrienden 🌇" data-likes="164" data-name="travel.png" data-tags="#vakantie #uitzicht" loading="lazy">
+            </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- PRIKBORD (social) -->
+        <section class="screen app-screen" data-screen="social">
+          <header class="app-header c-pinboard">
+            <button class="back-btn" data-back><i class="fa-solid fa-chevron-left"></i></button>
+            <div class="app-header-title"><i class="fa-solid fa-thumbtack"></i> PinBoard</div>
+          </header>
+          <div class="app-body">
+            <div class="profile-card">
+              <div class="profile-name">Seppe Van Hoof <span class="profile-handle">@seppevh</span></div>
+              <div class="profile-bio">🐾 hondenbaasje &nbsp;|&nbsp; Aalst</div>
+            </div>
+            <div class="share-post"><i class="fa-solid fa-paw"></i> 3 weken geleden zijn we met twee thuisgekomen 🐾💛</div>
+            <div class="share-post"><i class="fa-solid fa-futbol"></i> Zaterdag weer een thuismatch, hopelijk sta ik in de basis</div>
+            <div class="share-post muted"><i class="fa-solid fa-comment"></i> 14 nieuwe reacties op je vorige post</div>
+          </div>
+        </section>
+
+        <!-- KAARTJE (maps) -->
+        <section class="screen app-screen" data-screen="maps">
+          <header class="app-header c-maps">
+            <button class="back-btn" data-back><i class="fa-solid fa-chevron-left"></i></button>
+            <div class="app-header-title"><i class="fa-solid fa-location-dot"></i> GoMaps</div>
+          </header>
+          <div class="app-body">
+            <div class="pin-card">
+              <div class="pin-title"><i class="fa-solid fa-stethoscope"></i> Dierenkliniek Aalst</div>
+              <div class="pin-sub">3 dagen geleden — eerste afspraak voor de nieuwe puppy</div>
+            </div>
+            <div class="pin-card">
+              <div class="pin-title"><i class="fa-solid fa-futbol"></i> Voetbalplein KVV Aalst</div>
+              <div class="pin-sub">gisteren — trainingsavond</div>
+            </div>
+            <div class="pin-card">
+              <div class="pin-title"><i class="fa-solid fa-ice-cream"></i> IJssalon De Lekkerbek</div>
+              <div class="pin-sub">vandaag — met Warre</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- LEKTEST (breach) -->
+        <section class="screen app-screen" data-screen="breach">
+          <header class="app-header c-pwn">
+            <button class="back-btn" data-back><i class="fa-solid fa-chevron-left"></i></button>
+            <div class="app-header-title"><i class="fa-solid fa-shield-halved"></i> PwnCheck</div>
+          </header>
+          <div class="app-body">
+            <p class="gen-intro">Controleer of een e-mailadres voorkomt in gelekte databases en welke wachtwoorden daarbij zijn buitgemaakt.</p>
+            <input type="email" id="pwn-input" class="pw-input" placeholder="naam@voorbeeld.be" autocomplete="off" autocapitalize="off" spellcheck="false">
+            <button class="primary pw-check-btn" id="pwn-check"><i class="fa-solid fa-magnifying-glass"></i>&nbsp; Controleer</button>
+
+            <div class="pwn-result hidden" id="pwn-result">
+              <div class="pwn-summary" id="pwn-summary"></div>
+              <div id="pwn-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- BRAWLZONE (game) -->
+        <section class="screen app-screen brawl-screen" data-screen="brawl">
+          <div class="skull-layer" aria-hidden="true">
+            <i class="fa-solid fa-skull" style="top:6%;left:70%;font-size:64px;transform:rotate(12deg)"></i>
+            <i class="fa-solid fa-skull" style="top:20%;left:-4%;font-size:76px;transform:rotate(-14deg)"></i>
+            <i class="fa-solid fa-skull" style="top:34%;left:78%;font-size:58px;transform:rotate(-8deg)"></i>
+            <i class="fa-solid fa-skull" style="top:48%;left:8%;font-size:62px;transform:rotate(10deg)"></i>
+            <i class="fa-solid fa-skull" style="top:62%;left:72%;font-size:80px;transform:rotate(14deg)"></i>
+            <i class="fa-solid fa-skull" style="top:78%;left:2%;font-size:70px;transform:rotate(-12deg)"></i>
+            <i class="fa-solid fa-skull" style="top:90%;left:60%;font-size:60px;transform:rotate(6deg)"></i>
+          </div>
+          <header class="app-header c-brawl">
+            <button class="back-btn" data-back><i class="fa-solid fa-chevron-left"></i></button>
+            <div class="app-header-title"><i class="fa-solid fa-skull"></i> BrawlZone</div>
+          </header>
+          <div class="app-body brawl-body">
+            <div class="bz-chips">
+              <div class="bz-chip"><span class="bz-dot t"><i class="fa-solid fa-trophy"></i></span>18 420</div>
+              <div class="bz-chip"><span class="bz-dot c"><i class="fa-solid fa-coins"></i></span>3 560</div>
+              <div class="bz-chip"><span class="bz-dot g"><i class="fa-solid fa-gem"></i></span>214</div>
+            </div>
+
+            <div class="bz-profile">
+              <div class="bz-avatar"><i class="fa-solid fa-futbol"></i></div>
+              <div class="bz-nick" id="bz-nick">aa_gent_forever</div>
+              <div class="bz-mail"><i class="fa-solid fa-envelope"></i> seppe_vanhoof@mail.com</div>
+              <div class="bz-tags"><span>Niveau 87</span><span>Club: Gent Fans</span></div>
+            </div>
+
+            <div class="bz-title">Highscores</div>
+            <div class="bz-scores">
+              <div class="bz-score"><b>21 044</b><span>Hoogste trofeeën</span></div>
+              <div class="bz-score"><b>#1</b><span>Beste plaats Showdown</span></div>
+              <div class="bz-score"><b>14</b><span>Langste winreeks</span></div>
+              <div class="bz-score"><b>892</b><span>Doelpunten Brawl Ball</span></div>
+            </div>
+
+            <div class="bz-title">Speeltijd</div>
+            <div class="bz-time"><span class="bz-game">Brawl Stars</span><div class="bz-bar"><i style="width:100%"></i></div><b>214 u</b></div>
+            <div class="bz-time"><span class="bz-game">EA FC 25</span><div class="bz-bar"><i style="width:45%"></i></div><b>96 u</b></div>
+            <div class="bz-time"><span class="bz-game">Minecraft</span><div class="bz-bar"><i style="width:29%"></i></div><b>61 u</b></div>
+            <div class="bz-time"><span class="bz-game">Rocket League</span><div class="bz-bar"><i style="width:15%"></i></div><b>33 u</b></div>
+          </div>
+        </section>
+
+        <!-- METACHECK (exif) -->
+        <section class="screen app-screen" data-screen="metacheck">
+          <header class="app-header c-metacheck">
+            <button class="back-btn" data-back><i class="fa-solid fa-chevron-left"></i></button>
+            <div class="app-header-title"><i class="fa-solid fa-magnifying-glass-location"></i> MetaCheck</div>
+          </header>
+          <div class="app-body">
+            <p class="gen-intro">Upload een foto en bekijk de verborgen metadata. Sommige toestellen bewaren precies waar en wanneer een foto genomen is.</p>
+            <label class="upload-box" for="meta-file">
+              <i class="fa-solid fa-cloud-arrow-up"></i>
+              <span id="upload-label">Kies een foto...</span>
+            </label>
+            <input type="file" id="meta-file" accept="image/*" style="display:none;">
+
+            <div class="meta-result hidden" id="meta-result">
+              <div class="meta-row"><span class="meta-key">Toestel</span><span class="meta-val" id="meta-device">—</span></div>
+              <div class="meta-row"><span class="meta-key">Datum</span><span class="meta-val" id="meta-date">—</span></div>
+              <div class="meta-row"><span class="meta-key">GPS-coördinaten</span><span class="meta-val" id="meta-gps">—</span></div>
+              <p class="meta-empty hint hidden" id="meta-empty">Geen locatiegegevens gevonden in dit bestand — veel apps verwijderen die automatisch bij het delen.</p>
+              <div class="meta-map hidden" id="meta-map"></div>
+              <a class="secondary meta-map-link hidden" id="meta-map-link" target="_blank" rel="noopener"><i class="fa-solid fa-map-location-dot"></i>&nbsp;Open in OpenStreetMap</a>
+            </div>
+          </div>
+        </section>
+
+        <!-- BRUTEFORCE -->
+        <section class="screen app-screen" data-screen="bruteforce">
+          <header class="app-header c-hack">
+            <button class="back-btn" data-back><i class="fa-solid fa-chevron-left"></i></button>
+            <div class="app-header-title"><i class="fa-solid fa-terminal"></i> BruteForce</div>
+          </header>
+          <div class="app-body">
+            <div id="bf-form">
+              <p class="gen-intro">Vul aan met wat je over Seppe ontdekt hebt. Hoe meer klopt, hoe groter de kans dat het wachtwoord gekraakt wordt.</p>
+
+              <label class="om-label" for="bf-email">E-mailadres</label>
+              <input type="email" id="bf-email" class="pw-input" placeholder="naam@voorbeeld.be" autocomplete="off" autocapitalize="off" spellcheck="false">
+
+              <label class="om-label" for="bf-club">Voetbalclub</label>
+              <select id="bf-club" class="pw-input bf-select">
+                <option value="">Kies een club...</option>
+                <option value="AA_Gent">AA Gent</option>
+                <option value="Club_Brugge">Club Brugge</option>
+                <option value="Anderlecht">Anderlecht</option>
+                <option value="Standard">Standard</option>
+                <option value="KV_Mechelen">KV Mechelen</option>
+                <option value="Antwerp">Antwerp</option>
+                <option value="Genk">Genk</option>
+                <option value="Charleroi">Charleroi</option>
+              </select>
+
+              <label class="om-label" for="bf-birth">Geboortedatum</label>
+              <input type="text" id="bf-birth" class="pw-input" placeholder="dd/mm/jjjj" inputmode="numeric" autocomplete="off">
+
+              <label class="om-label" for="bf-phone">Gsm-nummer</label>
+              <input type="text" id="bf-phone" class="pw-input" placeholder="04xx/xx.xx.xx" inputmode="numeric" autocomplete="off">
+
+              <label class="om-label" for="bf-pet">Naam huisdier</label>
+              <input type="text" id="bf-pet" class="pw-input" placeholder="bv. Bella" autocomplete="off">
+
+              <label class="om-label" for="bf-postal">Postcode woonplaats</label>
+              <input type="text" id="bf-postal" class="pw-input" placeholder="bv. 1000" inputmode="numeric" maxlength="4" autocomplete="off">
+
+              <label class="om-label" for="bf-band">Favoriete muziekgroep</label>
+              <input type="text" id="bf-band" class="pw-input" placeholder="bv. Coldplay" autocomplete="off">
+
+              <label class="om-label" for="bf-vacation">Vakantiebestemming</label>
+              <input type="text" id="bf-vacation" class="pw-input" placeholder="bv. Rome" autocomplete="off">
+
+              <button class="primary pw-check-btn" id="bf-start"><i class="fa-solid fa-bolt"></i>&nbsp; Start brute force</button>
+              <div class="pw-feedback" id="bf-feedback"></div>
+            </div>
+
+            <div id="bf-console" class="bf-console hidden">
+              <div class="bf-console-head"><i class="fa-solid fa-terminal"></i> brute_force.exe</div>
+              <div class="bf-lines" id="bf-lines"></div>
+              <button class="secondary bf-again hidden" id="bf-again">Opnieuw</button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+      <button class="home-indicator on-home" id="home-indicator" aria-label="Terug naar startscherm"></button>
+    </div>
+  </div>
+
+  <div class="footer-row">
+    <p class="hint">Werk samen met je werkblad: noteer per app wat je ontdekt. · <a href="#" id="change-code-link" class="change-code-link">Andere code invoeren</a></p>
+  </div>
+</div>
+
+<div class="overlay lightbox" id="lightbox">
+  <div class="lb-card">
+    <img id="lightbox-img" alt="">
+    <div class="lb-caption" id="lb-caption"></div>
+    <div class="lb-tags" id="lb-tags"></div>
+    <div class="lb-foot">
+      <span class="snap-likes"><i class="fa-solid fa-heart"></i> <span id="lb-likes"></span></span>
+      <a class="lb-download" id="lb-download" download><i class="fa-solid fa-download"></i> Download</a>
+    </div>
+    <button class="lb-close" id="lb-close" aria-label="Sluiten"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+</div>
+
+
+<script src="app.min.js"></script>
+
+</body>
+</html>
