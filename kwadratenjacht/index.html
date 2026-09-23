@@ -17,7 +17,7 @@
 
   <div class="hud">
     <div class="hud-item">
-      <span class="label">Speler 1 — totaal</span>
+      <span class="label" id="p1-total-label">Speler 1 — totaal</span>
       <span class="value" id="p1-total-value" style="color:var(--p1)">0</span>
     </div>
     <div class="hud-item">
@@ -28,7 +28,7 @@
       <span class="label">Tijd</span>
       <span class="value" id="time-value">100s</span>
     </div>
-    <div class="hud-item">
+    <div class="hud-item" id="p2-total-item">
       <span class="label">Speler 2 — totaal</span>
       <span class="value" id="p2-total-value" style="color:var(--p2)">0</span>
     </div>
@@ -38,10 +38,10 @@
     <div class="timer-fill" id="timer-fill"></div>
   </div>
 
-  <div class="arena">
+  <div class="arena" id="arena">
     <div class="player-panel p1" id="p1-panel">
       <div class="player-header">
-        <span class="player-name">Speler 1</span>
+        <span class="player-name" id="p1-name">Speler 1</span>
         <span class="player-tag" id="p1-tag"></span>
       </div>
       <div class="progress-block">
@@ -87,7 +87,11 @@
   <div class="card start">
     <div class="icon">□²</div>
     <h2>Kwadratenjacht</h2>
-    <p>Beide spelers krijgen elk hun eigen rooster van 25 getallen, met precies 8 volkomen kwadraten erin. Jullie moeten allebei alle 8 kwadraten vinden om naar het volgende niveau te gaan. Klikt één speler fout, dan wint de ander meteen en begint het spel opnieuw. Vindt niemand op tijd alle 8, dan is het ook game over.</p>
+    <div class="mode-toggle" id="mode-toggle">
+      <button class="mode-btn active" data-mode="duo" type="button">Twee spelers</button>
+      <button class="mode-btn" data-mode="solo" type="button">Eén speler</button>
+    </div>
+    <p id="mode-desc">Beide spelers krijgen elk hun eigen rooster van 25 getallen, met precies 8 volkomen kwadraten erin. Jullie moeten allebei alle 8 kwadraten vinden om naar het volgende niveau te gaan. Klikt één speler fout, dan wint de ander meteen en begint het spel opnieuw. Vindt niemand op tijd alle 8, dan is het ook game over.</p>
     <button class="primary" id="start-btn">Start spel</button>
   </div>
 </div>
@@ -112,7 +116,7 @@
     <p id="over-reason">Geen van beide spelers vond alle 8 kwadraten op tijd.</p>
     <div class="stat-row">
       <div class="stat"><span class="n" id="over-level">1</span><span class="l">niveau gehaald</span></div>
-      <div class="stat"><span class="n" id="over-totals">0 - 0</span><span class="l">totaal p1 - p2</span></div>
+      <div class="stat"><span class="n" id="over-totals">0 - 0</span><span class="l" id="over-totals-label">totaal p1 - p2</span></div>
     </div>
     <button class="primary" id="retry-btn">Opnieuw</button>
   </div>
@@ -141,9 +145,21 @@
   const overReason = document.getElementById('over-reason');
   const overLevel = document.getElementById('over-level');
   const overTotals = document.getElementById('over-totals');
+  const overTotalsLabel = document.getElementById('over-totals-label');
 
   const p1TotalValue = document.getElementById('p1-total-value');
   const p2TotalValue = document.getElementById('p2-total-value');
+  const p1TotalLabel = document.getElementById('p1-total-label');
+  const p2TotalItem = document.getElementById('p2-total-item');
+  const p1NameEl = document.getElementById('p1-name');
+  const arenaEl = document.getElementById('arena');
+  const modeToggle = document.getElementById('mode-toggle');
+  const modeDesc = document.getElementById('mode-desc');
+
+  const MODE_DESC = {
+    duo: 'Beide spelers krijgen elk hun eigen rooster van 25 getallen, met precies 8 volkomen kwadraten erin. Jullie moeten allebei alle 8 kwadraten vinden om naar het volgende niveau te gaan. Klikt één speler fout, dan wint de ander meteen en begint het spel opnieuw. Vindt niemand op tijd alle 8, dan is het ook game over.',
+    solo: 'Jij krijgt een rooster van 25 getallen, met precies 8 volkomen kwadraten erin. Vind ze allemaal om naar het volgende niveau te gaan. Klik je fout, of is de tijd om voor je alle 8 gevonden hebt, dan is het game over.'
+  };
 
   const TIME_LIMIT = 20;
   const NEEDED = 8;
@@ -155,6 +171,15 @@
   let tickHandle = null;
   let lastTick = null;
   let roundOver = false;
+  let mode = 'duo';
+
+  modeToggle.addEventListener('click', (e) => {
+    const btn = e.target.closest('.mode-btn');
+    if (!btn) return;
+    mode = btn.dataset.mode;
+    [...modeToggle.children].forEach(b => b.classList.toggle('active', b === btn));
+    modeDesc.textContent = MODE_DESC[mode];
+  });
 
   function shuffle(arr){
     for (let i = arr.length - 1; i > 0; i--){
@@ -362,15 +387,23 @@
   const p2 = makePlayer('p2', 'Speler 2', p2TotalValue);
   const players = [p1, p2];
 
-  // both players must finish before the level is won
+  // in solo mode p1 finishing alone completes the level; in duo, both must finish
   function onPlayerFinished(){
+    if (mode === 'solo'){
+      if (p1.state.finished) finishRound('level-complete', null, 'Je vond alle 8 kwadraten!');
+      return;
+    }
     if (p1.state.finished && p2.state.finished){
       finishRound('level-complete', null, 'Beide spelers vonden alle 8 kwadraten.');
     }
   }
 
-  // a mistake ends the whole game immediately -- the other player wins
+  // a mistake ends the whole game immediately -- in duo, the other player wins
   function onPlayerEliminated(mistakenState){
+    if (mode === 'solo'){
+      finishRound('solo-wrong', null, 'Je klikte een verkeerd getal aan.');
+      return;
+    }
     const winner = mistakenState === p1.state ? p2.state.label : p1.state.label;
     finishRound('mistake-win', winner, `${mistakenState.label} klikte een verkeerd getal aan. ${winner} wint!`);
   }
@@ -403,7 +436,13 @@
       overTitle.textContent = 'Game over';
       overReason.textContent = reasonText;
       overLevel.textContent = level;
-      overTotals.textContent = `${p1.state.totalFound} - ${p2.state.totalFound}`;
+      if (mode === 'solo'){
+        overTotals.textContent = p1.state.totalFound;
+        overTotalsLabel.textContent = 'kwadraten gevonden';
+      } else {
+        overTotals.textContent = `${p1.state.totalFound} - ${p2.state.totalFound}`;
+        overTotalsLabel.textContent = 'totaal p1 - p2';
+      }
       overOverlay.classList.add('show');
     }
   }
@@ -421,7 +460,9 @@
       if (timeLeft <= 0){
         timeLeft = 0;
         updateTimerUI();
-        finishRound('timeout', null, 'De tijd is om. Niet beide spelers vonden op tijd alle 8 kwadraten.');
+        finishRound('timeout', null, mode === 'solo'
+          ? 'De tijd is om. Je vond niet op tijd alle 8 kwadraten.'
+          : 'De tijd is om. Niet beide spelers vonden op tijd alle 8 kwadraten.');
         return;
       }
       updateTimerUI();
@@ -442,7 +483,7 @@
     levelValue.textContent = level;
     // each player gets their own board -- same difficulty range, different numbers
     p1.renderBoard(buildLevelNumbers(level));
-    p2.renderBoard(buildLevelNumbers(level));
+    if (mode === 'duo') p2.renderBoard(buildLevelNumbers(level));
     running = true;
     startTimer();
   }
@@ -451,6 +492,12 @@
     level = 1;
     p1.resetTotal();
     p2.resetTotal();
+
+    arenaEl.classList.toggle('solo', mode === 'solo');
+    p2TotalItem.classList.toggle('hidden', mode === 'solo');
+    p1NameEl.textContent = mode === 'solo' ? 'Jij' : 'Speler 1';
+    p1TotalLabel.textContent = mode === 'solo' ? 'Score' : 'Speler 1 — totaal';
+
     startOverlay.classList.remove('show');
     winOverlay.classList.remove('show');
     overOverlay.classList.remove('show');
