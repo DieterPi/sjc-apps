@@ -270,8 +270,7 @@
         span.addEventListener('click', () => {
           const input = guessInputs[upper];
           if (input){
-            input.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
-            input.focus();
+            input.focus({ preventScroll: true });
             input.select();
           }
         });
