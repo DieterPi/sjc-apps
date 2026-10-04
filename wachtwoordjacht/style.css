@@ -445,11 +445,17 @@ button.secondary:disabled{ opacity: 0.4; cursor: default; }
   padding: 10px 12px 26px;
   box-shadow: 0 -8px 20px rgba(90,90,150,0.12);
 }
-.wt-choices-label{ font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; font-weight: 700; color: var(--text-muted); margin-bottom: 7px; }
+.wt-choices-label{
+  display: flex; align-items: center; gap: 6px;
+  font-family: 'Space Grotesk', sans-serif; font-size: 13px; font-weight: 700;
+  color: var(--accent); margin-bottom: 9px;
+}
+.wt-choices-label.pulse{ animation: wtLabelPulse 0.6s ease 2; }
+@keyframes wtLabelPulse{ 0%, 100%{ transform: scale(1); } 50%{ transform: scale(1.06); } }
 .wt-choice{
   display: block; width: 100%; text-align: left; cursor: pointer;
   font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.45; color: #2f3350;
-  background: #f1eefc; border: 1px solid var(--panel-border); border-radius: 12px;
+  background: #f1eefc; border: 1.5px solid var(--accent); border-radius: 12px;
   padding: 9px 11px; margin-bottom: 7px;
   transition: background 0.15s, transform 0.1s;
 }
@@ -457,6 +463,20 @@ button.secondary:disabled{ opacity: 0.4; cursor: default; }
 .wt-choice:active{ transform: scale(0.98); }
 .wt-restart{ text-align: center; font-weight: 700; color: #fff; background: #3fc27a; border-color: #3fc27a; }
 .wt-restart:hover{ background: #35b06c; }
+
+.wt-opener-line{
+  font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.9; color: #2f3350;
+  background: #f1eefc; border: 1.5px solid var(--accent); border-radius: 12px;
+  padding: 10px 12px; margin-bottom: 10px;
+}
+.wt-opener-input{
+  display: inline-block; width: 110px;
+  font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 12px;
+  border: none; border-bottom: 2px solid var(--accent); background: transparent;
+  padding: 0 2px; color: var(--accent); text-align: center;
+}
+.wt-opener-input:focus{ outline: none; background: rgba(124,117,204,0.08); }
+.wt-opener-send{ width: 100%; }
 .wt-left{ margin: 14px 0 18px; }
 
 /* outmail */

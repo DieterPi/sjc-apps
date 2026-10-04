@@ -37,14 +37,6 @@
 
   function buildWtTree(SC){
     return {
-      start: [
-        { t: 'Hoi Seppe, ik ben van WhatsTalk-support. Om je account te controleren heb ik je wachtwoord nodig.',
-          bad: true, reply: ['Haha nee hé, ik geef mijn wachtwoord aan niemand 🙄', 'Wie ben jij eigenlijk?'] },
-        { t: 'Hey Seppe! Ik zag je foto\'s op InstaPic, jij bent toch ook zo\'n grote fan van ' + SC.clubLabel + '? 💙',
-          next: 'rapport', reply: ['Ja zeker, al jaren! 😄 Ken ik jou?'] },
-        { t: 'Hoi, ik ben de neef van Warre, hij gaf me je nummer 😊',
-          next: 'rapport', reply: ['Ah, van Warre! Oké 😄 Wat is er?'] }
-      ],
       rapport: [
         { t: 'Kan je me je e-mailadres en wachtwoord geven? Dan zet ik je in een wedstrijd waar je iets kan winnen 🎁',
           bad: true, reply: ['Euh, dat klinkt echt verdacht...', 'Dat ga ik niet doen.'] },
@@ -74,7 +66,8 @@
 
   const wtLogin = $('wt-login'), wtChat = $('wt-chat'), wtMessages = $('wt-messages');
   const wtChoices = $('wt-choices'), wtResult = $('wt-result'), wtFeedback = $('wt-feedback'), wtNumber = $('wt-number');
-  let wtNode = 'start', wtBusy = false;
+  const FRIEND_NAME = 'warre';
+  let wtNode = '', wtBusy = false, wtChoicesFirstShow = true;
 
   function normNumber(v){
     let d = v.replace(/\D/g, '');
@@ -128,13 +121,57 @@
     next();
   }
 
+  function showOpener(){
+    wtChoices.innerHTML = '';
+
+    const label = document.createElement('div');
+    label.className = 'wt-choices-label pulse';
+    label.innerHTML = '<i class="fa-solid fa-pen"></i> Vul de naam in en verstuur je openingsbericht';
+    wtChoices.appendChild(label);
+
+    const line = document.createElement('div');
+    line.className = 'wt-opener-line';
+    line.innerHTML = 'Hoi Seppe, ik ben de neef van <input type="text" id="wt-opener-name" class="wt-opener-input" placeholder="naam" autocomplete="off">, hij gaf me je nummer 😊';
+    wtChoices.appendChild(line);
+
+    const btn = document.createElement('button');
+    btn.className = 'primary wt-opener-send';
+    btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i>&nbsp; Verstuur';
+    wtChoices.appendChild(btn);
+
+    wtChoices.classList.remove('hidden');
+    scrollDown();
+
+    const nameInput = $('wt-opener-name');
+    nameInput.focus();
+
+    function send(){
+      if (wtBusy) return;
+      const name = nameInput.value.trim();
+      if (!name) return;
+      addBubble('Hoi Seppe, ik ben de neef van ' + name + ', hij gaf me je nummer 😊', 'out');
+      wtChoices.classList.add('hidden');
+      if (name.toLowerCase() === FRIEND_NAME){
+        seppeSays(['Ah, van ' + name + '! Oké 😄 Wat is er?'], () => { wtNode = 'rapport'; showChoices(); });
+      } else {
+        seppeSays(['Euhm... ik ken geen ' + name + '. Wie ben jij eigenlijk? 🤔'], showLeft);
+      }
+    }
+    btn.addEventListener('click', send);
+    nameInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') send(); });
+  }
+
   function showChoices(){
     wtChoices.innerHTML = '';
     const opts = WT_TREE[wtNode];
     if (!opts) return;
     const label = document.createElement('div');
     label.className = 'wt-choices-label';
-    label.textContent = 'Kies je bericht';
+    label.innerHTML = '<i class="fa-solid fa-hand-pointer"></i> Tik op een bericht om te antwoorden';
+    if (wtChoicesFirstShow){
+      label.classList.add('pulse');
+      wtChoicesFirstShow = false;
+    }
     wtChoices.appendChild(label);
     opts.forEach(o => {
       const btn = document.createElement('button');
@@ -174,13 +211,13 @@
   }
 
   function startChat(){
-    wtNode = 'start';
-    wtStrikes = 0;
+    wtNode = '';
+    wtChoicesFirstShow = true;
     wtMessages.innerHTML = '';
     wtResult.classList.add('hidden');
     wtLogin.classList.add('hidden');
     wtChat.classList.remove('hidden');
-    showChoices();
+    showOpener();
   }
 
   function tryNumber(){
@@ -198,7 +235,7 @@
   wtNumber.addEventListener('keydown', (e) => { if (e.key === 'Enter') tryNumber(); });
 
   /* outmail: login */
-  const OM_EMAIL = 'seppe_vanhoof@mail.com';
+  let OM_EMAIL = '';
   let OM_PASSWORD = '';
   const omFeedback = $('om-feedback');
 
@@ -225,7 +262,7 @@
   });
 
   /* pwncheck */
-  const PWN_EMAIL = 'seppe_vanhoof@mail.com';
+  let PWN_EMAIL = '';
   let PWN_HITS = [];
 
   function buildPwnHits(SC){
@@ -487,26 +524,24 @@
   });
 
   /* scenario's per code (1-12): voorkomt afkijken bij buren */
-  const CLUB_LABELS = {
-    AA_Gent: 'KAA Gent', Club_Brugge: 'Club Brugge', Anderlecht: 'Anderlecht',
-    Standard: 'Standard', KV_Mechelen: 'KV Mechelen', Antwerp: 'Antwerp',
-    Genk: 'Genk', Charleroi: 'Charleroi'
-  };
 
   const SCENARIOS_RAW = [
-    { club: 'AA_Gent',      birth: '19/04/2006', phone: '0469205487', pet: 'Nero',   postal: '9320', band: 'MGMT' },
-    { club: 'Club_Brugge',  birth: '03/11/2007', phone: '0476128934', pet: 'Bailey', postal: '9320', band: 'Coldplay' },
-    { club: 'Anderlecht',   birth: '27/06/2008', phone: '0488345671', pet: 'Simba',  postal: '9320', band: 'Metallica' },
-    { club: 'Standard',     birth: '14/02/2007', phone: '0495512378', pet: 'Milo',   postal: '9320', band: 'Nirvana' },
-    { club: 'KV_Mechelen',  birth: '09/09/2006', phone: '0460789123', pet: 'Loulou', postal: '9320', band: 'Eminem' },
-    { club: 'Antwerp',      birth: '22/12/2008', phone: '0472934567', pet: 'Max',    postal: '9320', band: 'Queen' },
-    { club: 'Genk',         birth: '05/05/2007', phone: '0483456712', pet: 'Luna',   postal: '9320', band: 'ABBA' },
-    { club: 'Charleroi',    birth: '30/01/2009', phone: '0491678234', pet: 'Rex',    postal: '9320', band: 'Muse' },
-    { club: 'AA_Gent',      birth: '17/08/2006', phone: '0468213456', pet: 'Coco',   postal: '9320', band: 'Editors' },
-    { club: 'Club_Brugge',  birth: '11/03/2008', phone: '0479561234', pet: 'Zoe',    postal: '9320', band: 'Bastille' },
-    { club: 'Anderlecht',   birth: '24/10/2007', phone: '0487123489', pet: 'Bo',     postal: '9320', band: 'Placebo' },
-    { club: 'Standard',     birth: '02/07/2009', phone: '0493345612', pet: 'Bengi',  postal: '9320', band: 'Genesis' }
+    { club: 'AA_Gent',      birth: '19/04/2006', phone: '0469205487', pet: 'Nero',   postal: '9320', band: 'MGMT',      email: 'seppe_vanhoof@mail.com' },
+    { club: 'Club_Brugge',  birth: '03/11/2007', phone: '0476128934', pet: 'Bailey', postal: '9320', band: 'Coldplay',  email: 'seppe.vanhoof@mail.com' },
+    { club: 'Anderlecht',   birth: '27/06/2008', phone: '0488345671', pet: 'Simba',  postal: '9320', band: 'Metallica', email: 'seppevh@mail.com' },
+    { club: 'Standard',     birth: '14/02/2007', phone: '0495512378', pet: 'Milo',   postal: '9320', band: 'Nirvana',   email: 'svanhoof@mail.com' },
+    { club: 'KV_Mechelen',  birth: '09/09/2006', phone: '0460789123', pet: 'Loulou', postal: '9320', band: 'Eminem',    email: 'seppe_vh@mail.com' },
+    { club: 'Antwerp',      birth: '22/12/2008', phone: '0472934567', pet: 'Max',    postal: '9320', band: 'Queen',     email: 'seppe.vh@mail.com' },
+    { club: 'Genk',         birth: '05/05/2007', phone: '0483456712', pet: 'Luna',   postal: '9320', band: 'ABBA',      email: 'vanhoof.seppe@mail.com' },
+    { club: 'Charleroi',    birth: '30/01/2009', phone: '0491678234', pet: 'Rex',    postal: '9320', band: 'Muse',      email: 'seppe-vanhoof@mail.com' },
+    { club: 'AA_Gent',      birth: '17/08/2006', phone: '0468213456', pet: 'Coco',   postal: '9320', band: 'Editors',   email: 'sepvanhoof@mail.com' },
+    { club: 'Club_Brugge',  birth: '11/03/2008', phone: '0479561234', pet: 'Zoe',    postal: '9320', band: 'Bastille',  email: 'seppe_vanhoof26@mail.com' },
+    { club: 'Anderlecht',   birth: '24/10/2007', phone: '0487123489', pet: 'Bo',     postal: '9320', band: 'Placebo',   email: 'seppevanhoof@mail.com' },
+    { club: 'Standard',     birth: '02/07/2009', phone: '0493345612', pet: 'Bengi',  postal: '9320', band: 'Genesis',   email: 's.vanhoof@mail.com' }
   ];
+
+  /* Erembodegem mag hier nooit staan -- dat mag alleen via MetaCheck (thuisfoto) blijken */
+  const TOWNS = ['Aalst', 'Haaltert', 'Ninove', 'Denderleeuw'];
 
   const VACATIONS = [
     { key: 'barcelona', label: 'Barcelona', file: 'assets/share_pic_01_barcelona-CbhlGV9b.png', caption: 'Sagrada Família 😍 wat een gebouw!', tags: '#barcelona #sagradafamilia' },
@@ -516,20 +551,23 @@
 
   function deriveScenario(raw, idx){
     const birthDigits = raw.birth.replace(/\D/g, '');
+    const birthYear = parseInt(raw.birth.slice(-4), 10);
     const phoneDigits = raw.phone;
     const phoneFormatted = phoneDigits.slice(0, 4) + '/' + phoneDigits.slice(4, 6) + '.' + phoneDigits.slice(6, 8) + '.' + phoneDigits.slice(8, 10);
     const vac = VACATIONS[idx % VACATIONS.length];
+    const town = TOWNS[idx % TOWNS.length];
     return Object.assign({}, raw, {
-      email: 'seppe_vanhoof@mail.com',
-      clubLabel: CLUB_LABELS[raw.club],
       gamertag: raw.club.toLowerCase() + '_forever',
       birthDigits: birthDigits,
       birthFormatted: raw.birth,
+      birthYear: birthYear,
+      age: new Date().getFullYear() - birthYear,
       phone: phoneDigits,
       phoneFormatted: phoneFormatted,
       vacation: vac.key,
       vacationLabel: vac.label,
       vacationPhoto: vac,
+      town: town,
       password: raw.pet + birthDigits
     });
   }
@@ -547,8 +585,9 @@
     wtChoices.classList.add('hidden');
     wtFeedback.classList.remove('show');
     wtNumber.value = '';
-    wtNode = 'start';
+    wtNode = '';
     wtBusy = false;
+    wtChoicesFirstShow = true;
 
     $('om-login').classList.remove('hidden');
     $('om-success').classList.add('hidden');
@@ -575,7 +614,9 @@
     SC = SCENARIOS[code - 1];
     WT_NUMBER = SC.phone;
     WT_TREE = buildWtTree(SC);
+    OM_EMAIL = SC.email;
     OM_PASSWORD = SC.password;
+    PWN_EMAIL = SC.email;
     PWN_HITS = buildPwnHits(SC);
     BF_REAL = {
       email: SC.email, club: SC.club, birth: SC.birthDigits, phone: SC.phone,
@@ -583,6 +624,10 @@
     };
     BF_REAL_PASSWORD = SC.password;
     $('bz-nick').textContent = SC.gamertag;
+    $('bz-mail-value').textContent = SC.email;
+    $('ig-age').textContent = SC.age;
+    $('pin-town-1').textContent = SC.town;
+    $('pin-town-2').textContent = SC.town;
 
     const vp = SC.vacationPhoto;
     const vacImg = $('vacation-photo');
